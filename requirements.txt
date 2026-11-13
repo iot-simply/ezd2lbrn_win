@@ -1,0 +1,8 @@
+# Laufzeit-Abhaengigkeiten von ezd2lbrn (beide optional, mit Fallback)
+# tkinter gehoert zum Python-Standardumfang und wird nicht ueber pip installiert.
+
+# Exakte Schriftmetriken (ohne fontTools werden Arial-Werte angenommen)
+fonttools>=4.38
+
+# Logo-Skalierung in der Oberflaeche und PNG-Export der Vorschau
+pillow>=9.0

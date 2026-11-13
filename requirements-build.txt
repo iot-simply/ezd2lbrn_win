@@ -1,0 +1,4 @@
+# Zusaetzlich nur fuer den Bau der eigenstaendigen ezd2lbrn.exe (build_exe.bat)
+-r requirements.txt
+
+pyinstaller>=5.13
