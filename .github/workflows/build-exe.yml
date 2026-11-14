@@ -4,6 +4,9 @@ name: ezd2lbrn.exe bauen
 # - Manuell startbar (Actions -> "ezd2lbrn.exe bauen" -> "Run workflow").
 #   Wird dabei ein Release-Tag angegeben, wird die exe an dieses Release gehaengt.
 # - Laeuft automatisch bei einem Tag wie v1.7 oder 1.7 und haengt die exe an das Release.
+#
+# Der Release-Text wird aus CHANGELOG.md erzeugt: der Abschnitt "## <Version>"
+# ist die Quelle, damit Changelog und Release nicht auseinanderlaufen.
 on:
   workflow_dispatch:
     inputs:
@@ -25,10 +28,10 @@ jobs:
 
     steps:
       - name: Quelltext holen
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Python einrichten
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -61,7 +64,7 @@ jobs:
           Remove-Item test_icon.png
 
       - name: Ergebnis als Artefakt hochladen
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ezd2lbrn-exe
           path: dist/ezd2lbrn.exe
@@ -75,9 +78,47 @@ jobs:
         run: |
           $tag = $env:RELEASE_TAG
           if (-not $tag) { $tag = $env:GITHUB_REF_NAME }
+          $version = $tag -replace '^v', ''
+
+          # Passenden Abschnitt aus CHANGELOG.md holen ("## 1.7" bis zur naechsten "## "-Zeile)
+          $abschnitt = @()
+          $drin = $false
+          foreach ($zeile in (Get-Content CHANGELOG.md -Encoding UTF8)) {
+            if ($zeile -match '^##\s+(.*)$') {
+              if ($drin) { break }
+              if ($Matches[1].Trim() -eq $version) { $drin = $true }
+              continue
+            }
+            if ($drin) { $abschnitt += $zeile }
+          }
+          $text = ($abschnitt -join "`n").Trim()
+
+          $notizen = @()
+          if ($text) {
+            $notizen += "## Aenderungen in $version"
+            $notizen += ""
+            $notizen += $text
+            $notizen += ""
+          }
+          $notizen += "## Download"
+          $notizen += ""
+          $notizen += "``ezd2lbrn.exe`` laeuft eigenstaendig, ohne installiertes Python."
+          $notizen += "Gebaut mit PyInstaller aus ``$($env:GITHUB_SHA.Substring(0,7))`` auf einem Windows-Runner."
+          $notizen += ""
+          $notizen += "Die Datei ist nicht signiert. Windows meldet deshalb beim ersten Start SmartScreen:"
+          $notizen += "ueber ``Weitere Informationen`` und ``Trotzdem ausfuehren`` bestaetigen."
+          $notizen += ""
+          $notizen += "Vollstaendige Anleitung: siehe README. Laserparameter vor dem ersten Lauf an Testmaterial pruefen."
+          Set-Content -Path release-notes.md -Value ($notizen -join "`n") -Encoding UTF8
+
           gh release view $tag 2>$null | Out-Null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $tag --title "ezd2lbrn $tag" --notes "Eigenstaendige Windows-Programmdatei, gebaut mit PyInstaller."
+            gh release create $tag --title "ezd2lbrn $version" --notes-file release-notes.md
+            Write-Host "Release $tag angelegt."
+          } else {
+            gh release edit $tag --title "ezd2lbrn $version" --notes-file release-notes.md
+            Write-Host "Release $tag aktualisiert."
           }
           gh release upload $tag dist/ezd2lbrn.exe --clobber
+          Remove-Item release-notes.md
           Write-Host "exe an Release $tag gehaengt."
