@@ -39,7 +39,7 @@ import xml.etree.ElementTree as ET
 from io import BytesIO
 from xml.sax.saxutils import quoteattr
 
-VERSION = "1.7"
+VERSION = "1.7.1"
 APP_AUTHOR = "Christopher Schmick"
 APP_BRAND = "iot-simply"
 APP_URL = "https://iot-simply.com"

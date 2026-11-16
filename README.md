@@ -11,7 +11,7 @@ Entstanden beim Umstieg von einem Faserlaser mit EZCAD2 (Laserquelle
 LG-20-J-01) auf eine Haas HL 50E mit LightBurn. Typischer Anwendungsfall sind
 Typenschilder (Eloxal, Fill-Gravur).
 
-- Version: **1.7**
+- Version: **1.7.1**
 - Lizenz: **MIT** – Copyright (c) 2026 Christopher Schmick, [iot-simply.com](https://iot-simply.com)
 - Keine Internetverbindung nötig, es werden keine Daten übertragen.
 

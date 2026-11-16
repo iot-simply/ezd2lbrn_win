@@ -3,6 +3,20 @@
 Alle nennenswerten Änderungen an ezd2lbrn. Versionsnummern entsprechen der
 Konstanten `VERSION` in `ezd2lbrn.py`.
 
+## 1.7.1
+
+- Markenzuordnung ergänzt: EZCAD ist eine Marke von Beijing JCZ Technology,
+  LightBurn eine Marke von LightBurn Software. ezd2lbrn ist ein unabhängiges
+  Projekt ohne Verbindung zu diesen Unternehmen. Der Hinweis steht im
+  Info-Dialog, im Lizenzfenster und in der Dokumentation.
+- Deutlicher Sicherheitshinweis im Info-Dialog: keine Gewährleistung,
+  Laserparameter und Ergebnis vor dem ersten Lauf an Testmaterial prüfen.
+- Dokumentation: Abschnitte „Haftung und Sicherheit“ und „Marken“ in der
+  README, fertige Textbausteine für eine Downloadseite unter
+  `docs/download-hinweise.md`.
+- Keine Änderung an der Umwandlung selbst: Parser, Konverter und Ausgabe sind
+  gegenüber 1.7 unverändert.
+
 ## 1.7
 
 - Umstellung auf die **MIT-Lizenz** (Copyright (c) 2026 Christopher Schmick,
