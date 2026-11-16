@@ -70,8 +70,9 @@ solange Copyright- und Lizenzhinweis erhalten bleiben.
 Die Weitergabe erfolgt **kostenlos und ohne Gewährleistung**. Die vollständigen
 Lizenztexte aller mitgelieferten Komponenten (MeerK40t, fontTools, Pillow,
 Python, Tcl/Tk, PyInstaller) sind im Programm enthalten: Schaltfläche
-**Lizenzen** unten rechts, oder `ezd2lbrn.exe --lizenzen` in der
-Eingabeaufforderung.
+**Lizenzen** unten rechts. Wer sie lieber als Datei hat:
+`ezd2lbrn.exe --lizenzen > lizenzen.txt` in der Eingabeaufforderung – das
+Programm hat kein Konsolenfenster, die Ausgabe muss deshalb umgeleitet werden.
 
 ---
 

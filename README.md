@@ -394,9 +394,10 @@ Der EZD-Leseteil (Huffman-Dekompression, Objektstruktur, Feldbelegung) basiert
 auf dem EZD-Parser von [MeerK40t](https://github.com/meerk40t/meerk40t)
 (MIT-Lizenz) und wurde für ezd2lbrn neu geschrieben und erweitert.
 
-Die Lizenztexte liegen auch der `.exe` bei: Schaltfläche „Lizenzen“ im
-Programm, oder `ezd2lbrn.exe --lizenzen`. Zu Markenrechten siehe
-[Marken](#marken).
+Die Lizenztexte liegen auch der `.exe` bei – Schaltfläche „Lizenzen“ unten
+rechts im Programm. Auf der Kommandozeile `ezd2lbrn.exe --lizenzen > lizenzen.txt`:
+Die `.exe` wird ohne Konsolenfenster gebaut, die Ausgabe muss deshalb in eine
+Datei umgeleitet werden. Zu Markenrechten siehe [Marken](#marken).
 
 Lizenzen aller verwendeten Fremdkomponenten:
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Die **vollständigen**

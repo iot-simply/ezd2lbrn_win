@@ -53,15 +53,25 @@ jobs:
 
       # Das Programm ist ein GUI-Programm (--noconsole). PowerShell wartet darauf
       # nicht von selbst, deshalb Start-Process mit -Wait.
-      - name: Kurztest (Programm startet und schreibt Symbol)
+      - name: Kurztest (Start, Symbol und Lizenztexte)
         run: |
           $exe = Resolve-Path "dist\ezd2lbrn.exe"
           $p = Start-Process -FilePath $exe -ArgumentList "--icon-export","test_icon.png" `
                              -WorkingDirectory $PWD -PassThru -Wait
           if ($p.ExitCode -ne 0) { throw "ezd2lbrn.exe endete mit Code $($p.ExitCode)" }
           if (-not (Test-Path test_icon.png)) { throw "Programm hat kein Symbol geschrieben" }
-          Write-Host "ezd2lbrn.exe laeuft, Symbol geschrieben."
-          Remove-Item test_icon.png
+          # Die Lizenztexte der Fremdkomponenten muessen aus der .exe heraus erreichbar
+          # sein, sonst darf die Datei nicht weitergegeben werden.
+          $q = Start-Process -FilePath $exe -ArgumentList "--lizenzen" -WorkingDirectory $PWD `
+                             -RedirectStandardOutput lizenzen.txt -PassThru -Wait
+          if ($q.ExitCode -ne 0) { throw "--lizenzen endete mit Code $($q.ExitCode)" }
+          $groesse = (Get-Item lizenzen.txt).Length
+          if ($groesse -lt 50000) { throw "Lizenztext unvollstaendig: nur $groesse Bytes" }
+          if (-not (Select-String -Path lizenzen.txt -Pattern "MIT License" -Quiet)) {
+            throw "Lizenztext enthaelt keine MIT-Lizenz"
+          }
+          Write-Host "ezd2lbrn.exe laeuft. Symbol geschrieben, Lizenztext $groesse Bytes."
+          Remove-Item test_icon.png, lizenzen.txt
 
       - name: Ergebnis als Artefakt hochladen
         uses: actions/upload-artifact@v6
@@ -119,7 +129,9 @@ jobs:
           $notizen += "## Lizenz und Marken"
           $notizen += ""
           $notizen += "MIT-Lizenz, Copyright (c) 2026 Christopher Schmick, iot-simply.com. Ohne Gewaehrleistung."
-          $notizen += "Alle Lizenztexte stecken im Programm: Schaltflaeche ``Lizenzen``, oder ``ezd2lbrn.exe --lizenzen``."
+          $notizen += "Alle Lizenztexte stecken im Programm: Schaltflaeche ``Lizenzen`` unten rechts."
+          $notizen += "Auf der Kommandozeile: ``ezd2lbrn.exe --lizenzen > lizenzen.txt`` (das Programm hat"
+          $notizen += "bewusst kein Konsolenfenster, die Texte muessen deshalb in eine Datei geschrieben werden)."
           $notizen += ""
           $notizen += "EZCAD ist eine Marke von Beijing JCZ Technology Co., Ltd., LightBurn eine Marke von"
           $notizen += "LightBurn Software, LLC. ezd2lbrn ist unabhaengig und steht in keiner Verbindung zu"
