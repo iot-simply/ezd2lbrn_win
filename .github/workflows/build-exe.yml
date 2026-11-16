@@ -108,7 +108,22 @@ jobs:
           $notizen += "Die Datei ist nicht signiert. Windows meldet deshalb beim ersten Start SmartScreen:"
           $notizen += "ueber ``Weitere Informationen`` und ``Trotzdem ausfuehren`` bestaetigen."
           $notizen += ""
-          $notizen += "Vollstaendige Anleitung: siehe README. Laserparameter vor dem ersten Lauf an Testmaterial pruefen."
+          $notizen += "Vollstaendige Anleitung: siehe README."
+          $notizen += ""
+          $notizen += "## Sicherheit"
+          $notizen += ""
+          $notizen += "Das Programm steuert keinen Laser, die erzeugte Datei enthaelt aber Laserparameter."
+          $notizen += "Geometrie, Groesse, Position und alle Parameter in LightBurn pruefen und an"
+          $notizen += "Testmaterial erproben, bevor ein Werkstueck bearbeitet wird."
+          $notizen += ""
+          $notizen += "## Lizenz und Marken"
+          $notizen += ""
+          $notizen += "MIT-Lizenz, Copyright (c) 2026 Christopher Schmick, iot-simply.com. Ohne Gewaehrleistung."
+          $notizen += "Alle Lizenztexte stecken im Programm: Schaltflaeche ``Lizenzen``, oder ``ezd2lbrn.exe --lizenzen``."
+          $notizen += ""
+          $notizen += "EZCAD ist eine Marke von Beijing JCZ Technology Co., Ltd., LightBurn eine Marke von"
+          $notizen += "LightBurn Software, LLC. ezd2lbrn ist unabhaengig und steht in keiner Verbindung zu"
+          $notizen += "diesen Unternehmen."
           Set-Content -Path release-notes.md -Value ($notizen -join "`n") -Encoding UTF8
 
           gh release view $tag 2>$null | Out-Null

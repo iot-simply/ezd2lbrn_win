@@ -29,6 +29,8 @@ Typenschilder (Eloxal, Fill-Gravur).
 - [Vorschau](#vorschau)
 - [Einschränkungen](#einschränkungen)
 - [SmartScreen-Hinweis](#smartscreen-hinweis)
+- [Haftung und Sicherheit](#haftung-und-sicherheit)
+- [Marken](#marken)
 - [Stand der Prüfung](#stand-der-prüfung)
 - [Mögliche nächste Schritte](#mögliche-nächste-schritte)
 - [Technische Dokumentation](#technische-dokumentation)
@@ -84,7 +86,14 @@ python ezd2lbrn.py
 Unter Windows genügt ein Doppelklick auf **`start_ezd2lbrn.bat`**. Das Skript
 installiert fehlende Pakete selbst und startet die Oberfläche.
 
-### Variante B: eigenständige `.exe` bauen
+### Variante B: fertige `.exe` herunterladen
+
+Unter [Releases](https://github.com/iot-simply/ezd2lbrn/releases) liegt eine
+fertig gebaute `ezd2lbrn.exe`. Sie wird von GitHub Actions auf einem
+Windows-Runner aus genau dem Quelltext dieses Repositorys gebaut, der zum
+jeweiligen Release gehört. Sie läuft ohne installiertes Python.
+
+### Variante C: eigenständige `.exe` selbst bauen
 
 **`build_exe.bat`** einmal ausführen. Es installiert `fonttools`, `pillow` und
 `pyinstaller`, exportiert das eingebettete Programmsymbol und baut mit
@@ -298,6 +307,41 @@ dem Quelltext.
 
 ---
 
+## Haftung und Sicherheit
+
+ezd2lbrn wird **ohne jede Gewährleistung** weitergegeben (siehe [LICENSE](LICENSE)).
+
+Das Programm steuert keinen Laser, es wandelt nur Dateien um. Die erzeugte
+`.lbrn2` enthält jedoch Laserparameter (Leistung, Geschwindigkeit, Frequenz,
+Pulsbreite), die aus der EZD-Datei oder aus einer Vorlage stammen.
+
+> **Vor dem ersten Lauf immer an Testmaterial prüfen.** Geometrie, Größe,
+> Position und sämtliche Laserparameter in LightBurn kontrollieren. Falsche
+> Parameter können Werkstück, Optik oder Laserquelle beschädigen. Die üblichen
+> Sicherheitsregeln für den Betrieb eines Lasers gelten unverändert.
+
+Die Umsetzung der Textdarstellung ist eine Nachbildung des LightBurn-Satzes.
+Maßgeblich ist immer, was LightBurn selbst anzeigt – siehe
+[Stand der Prüfung](#stand-der-prüfung).
+
+---
+
+## Marken
+
+**EZCAD** ist eine Marke von Beijing JCZ Technology Co., Ltd.
+**LightBurn** ist eine Marke von LightBurn Software, LLC.
+Weitere genannte Namen und Marken gehören ihren jeweiligen Inhabern.
+
+ezd2lbrn ist ein **unabhängiges** Projekt. Es steht in keiner Verbindung zu
+diesen Unternehmen und wird von ihnen weder unterstützt noch gebilligt. Die
+Namen werden ausschließlich genannt, um zu beschreiben, mit welchen
+Dateiformaten das Programm arbeitet.
+
+Das Lesen des EZD-Formats dient der Herstellung von Interoperabilität zwischen
+eigenständigen Programmen (§ 69e UrhG, Art. 6 der EU-Richtlinie 2009/24/EG).
+
+---
+
 ## Stand der Prüfung
 
 - Getestet mit einer echten EZD-Datei (Typenschild 118 × 80 mm, Arial fett und
@@ -349,6 +393,10 @@ Lizenzhinweis erhalten bleiben. Ohne Gewährleistung. Siehe [LICENSE](LICENSE).
 Der EZD-Leseteil (Huffman-Dekompression, Objektstruktur, Feldbelegung) basiert
 auf dem EZD-Parser von [MeerK40t](https://github.com/meerk40t/meerk40t)
 (MIT-Lizenz) und wurde für ezd2lbrn neu geschrieben und erweitert.
+
+Die Lizenztexte liegen auch der `.exe` bei: Schaltfläche „Lizenzen“ im
+Programm, oder `ezd2lbrn.exe --lizenzen`. Zu Markenrechten siehe
+[Marken](#marken).
 
 Lizenzen aller verwendeten Fremdkomponenten:
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Die **vollständigen**

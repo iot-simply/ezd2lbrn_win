@@ -24,6 +24,16 @@ python ezd2lbrn.py --lizenzen
 
 In der grafischen Oberfläche: Schaltfläche **„Lizenzen“** unten rechts.
 
+## Marken
+
+**EZCAD** ist eine Marke von Beijing JCZ Technology Co., Ltd.
+**LightBurn** ist eine Marke von LightBurn Software, LLC.
+Weitere genannte Namen und Marken gehören ihren jeweiligen Inhabern.
+
+ezd2lbrn ist ein unabhängiges Projekt, steht in keiner Verbindung zu diesen
+Unternehmen und wird von ihnen weder unterstützt noch gebilligt. Die Namen
+werden nur genannt, um die unterstützten Dateiformate zu beschreiben.
+
 ## Hinweis zu PyInstaller
 
 PyInstaller wird ausschließlich zum Bauen der eigenständigen `ezd2lbrn.exe`

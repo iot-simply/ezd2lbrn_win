@@ -16,6 +16,12 @@ Copyright (c) 2026 Christopher Schmick, iot-simply.com
 Open Source unter der MIT-Lizenz (Lizenztext: Schaltflaeche "Lizenzen" im
 Programm oder  python ezd2lbrn.py --lizenzen). Ohne Gewaehrleistung.
 
+EZCAD ist eine Marke von Beijing JCZ Technology, LightBurn eine Marke von
+LightBurn Software LLC. ezd2lbrn ist ein unabhaengiges Projekt und steht in
+keiner Verbindung zu diesen Unternehmen, es wird von ihnen weder unterstuetzt
+noch gebilligt. Die Namen werden nur genannt, um die Kompatibilitaet zu
+beschreiben.
+
 Der EZD-Leseteil (Huffman-Dekompression, Objektstruktur, Feldbelegung) basiert
 auf dem EZD-Parser von MeerK40t (https://github.com/meerk40t/meerk40t),
 Copyright (c) 2021 meerk40t, MIT-Lizenz - vollstaendiger Lizenztext im Programm
@@ -2001,6 +2007,10 @@ def show_licenses(master):
     w.configure(bg=THEME["bg"])
     ttk.Label(w, text="Lizenz von ezd2lbrn und der verwendeten Drittkomponenten", style="Section.TLabel").pack(
         anchor="w", padx=12, pady=(10, 4))
+    ttk.Label(w, text="EZCAD ist eine Marke von Beijing JCZ Technology, LightBurn eine Marke von LightBurn "
+                      "Software LLC. ezd2lbrn ist unabhaengig und steht in keiner Verbindung zu diesen "
+                      "Unternehmen.", style="Foot.TLabel", wraplength=740, justify="left").pack(
+        anchor="w", padx=12, pady=(0, 6))
     t = scrolledtext.ScrolledText(w, font=f_mono, wrap="word", bd=0, relief="flat", padx=10, pady=8,
                                   highlightthickness=1, highlightbackground=THEME["line"])
     t.pack(fill="both", expand=True, padx=12)
@@ -2857,6 +2867,11 @@ def run_gui():
             "Enthaelt Teile auf Basis von MeerK40t (MIT) und verwendet\n"
             "fontTools (MIT) und Pillow (MIT-CMU). Vollstaendige Lizenztexte:\n"
             "Schaltflaeche \"Lizenzen\" unten rechts.\n\n"
+            "EZCAD ist eine Marke von Beijing JCZ Technology, LightBurn eine\n"
+            "Marke von LightBurn Software LLC. ezd2lbrn ist unabhaengig und\n"
+            "steht in keiner Verbindung zu diesen Unternehmen.\n\n"
+            "Keine Gewaehrleistung: Laserparameter und Ergebnis vor dem ersten\n"
+            "Lauf immer an Testmaterial pruefen.\n\n"
             "Einstellungen: %s" % (VERSION, APP_YEAR, APP_AUTHOR, APP_URL.split("//")[-1], settings_path()))
 
     # ---- Layout ----
