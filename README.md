@@ -88,7 +88,7 @@ installiert fehlende Pakete selbst und startet die Oberfläche.
 
 ### Variante B: fertige `.exe` herunterladen
 
-Unter [Releases](https://github.com/iot-simply/ezd2lbrn/releases) liegt eine
+Unter [Releases](https://github.com/iot-simply/ezd2lbrn_win/releases) liegt eine
 fertig gebaute `ezd2lbrn.exe`. Sie wird von GitHub Actions auf einem
 Windows-Runner aus genau dem Quelltext dieses Repositorys gebaut, der zum
 jeweiligen Release gehört. Sie läuft ohne installiertes Python.

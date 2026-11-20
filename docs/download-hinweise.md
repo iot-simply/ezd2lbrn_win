@@ -21,8 +21,8 @@ Schraffuren werden zu Fill-Layern, EZCAD-Stifte zu Layern.
 **Kostenlos und quelloffen (MIT-Lizenz).** Kein Konto, keine Registrierung,
 keine Datenübertragung – das Programm arbeitet ausschließlich lokal.
 
-**Download:** [ezd2lbrn.exe (Windows, 64 Bit)](https://github.com/iot-simply/ezd2lbrn/releases/latest)
-**Quelltext:** [github.com/iot-simply/ezd2lbrn](https://github.com/iot-simply/ezd2lbrn)
+**Download:** [ezd2lbrn.exe (Windows, 64 Bit)](https://github.com/iot-simply/ezd2lbrn_win/releases/latest)
+**Quelltext:** [github.com/iot-simply/ezd2lbrn_win](https://github.com/iot-simply/ezd2lbrn_win)
 
 Systemvoraussetzung: Windows 64 Bit. Python wird **nicht** benötigt, es ist in
 der Programmdatei enthalten.
