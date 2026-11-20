@@ -3,6 +3,19 @@
 Alle nennenswerten Änderungen an ezd2lbrn. Versionsnummern entsprechen der
 Konstanten `VERSION` in `ezd2lbrn.py`.
 
+## 1.8.2
+
+- **Eigenes Programmsymbol**: ein schwarz eloxiertes Typenschild mit gravierter
+  Marke – links die EZCAD-Schraffur, rechts die LightBurn-Füllung. Bisher
+  diente das iot-simply-Logo als Programmsymbol; es bleibt im Kopfbereich des
+  Info-Fensters.
+- Im dunklen Design wurden Auswahlfelder und Eingabefelder beim Überfahren mit
+  der Maus hell, die Schrift war dann nicht mehr lesbar. Die Zustände „active“
+  und „hover“ folgen jetzt dem Design; ohne sie nimmt das ttk-Thema „clam“
+  seine eigene helle Farbe.
+- Ein bereits geöffnetes Info-Fenster färbt sich beim Umschalten des Designs
+  sofort nach statt erst beim erneuten Öffnen.
+
 ## 1.8.1
 
 - Die Fenster-Titelleiste folgt unter Windows jetzt dem dunklen Design
