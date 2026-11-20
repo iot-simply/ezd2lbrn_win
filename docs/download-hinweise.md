@@ -27,6 +27,12 @@ keine Datenübertragung – das Programm arbeitet ausschließlich lokal.
 Systemvoraussetzung: Windows 64 Bit. Python wird **nicht** benötigt, es ist in
 der Programmdatei enthalten.
 
+Der Release-Text auf GitHub nennt Größe und SHA-256 der Datei. Wer mag, prüft
+den Download damit (PowerShell im Download-Ordner):
+`Get-FileHash .\ezd2lbrn.exe -Algorithm SHA256`. Meldet Windows beim Start
+`Could not load PyInstaller's embedded PKG archive`, war der Download
+unvollständig – Datei löschen und neu laden.
+
 ---
 
 #### Beim ersten Start: Windows-Hinweis bestätigen

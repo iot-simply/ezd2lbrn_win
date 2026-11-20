@@ -4,8 +4,8 @@
 ezd2lbrn - EZCAD2 (.ezd) -> LightBurn (.lbrn2) Konverter, offline.
 
 Texte werden als echte LightBurn-Textobjekte geschrieben (bearbeitbar),
-Position, Hoehe, Fett, Ausrichtung, Zeilen- und Zeichenabstand werden aus der
-EZD-Datei uebernommen. Schraffuren werden zu Fill-Layern (Scan), Konturen zu
+Position, Höhe, Fett, Ausrichtung, Zeilen- und Zeichenabstand werden aus der
+EZD-Datei übernommen. Schraffuren werden zu Fill-Layern (Scan), Konturen zu
 Line-Layern (Cut). EZCAD-Stifte werden zu LightBurn-Layern.
 
 Aufruf:
@@ -13,20 +13,20 @@ Aufruf:
     python ezd2lbrn.py datei.ezd [...]  -> Kommandozeile (siehe --help)
 
 Copyright (c) 2026 Christopher Schmick, iot-simply.com
-Open Source unter der MIT-Lizenz (Lizenztext: Schaltflaeche "Lizenzen" im
-Programm oder  python ezd2lbrn.py --lizenzen). Ohne Gewaehrleistung.
+Open Source unter der MIT-Lizenz (Lizenztext: Schaltfläche "Lizenzen" im
+Programm oder  python ezd2lbrn.py --lizenzen). Ohne Gewährleistung.
 
 EZCAD ist eine Marke von Beijing JCZ Technology, LightBurn eine Marke von
-LightBurn Software LLC. ezd2lbrn ist ein unabhaengiges Projekt und steht in
-keiner Verbindung zu diesen Unternehmen, es wird von ihnen weder unterstuetzt
-noch gebilligt. Die Namen werden nur genannt, um die Kompatibilitaet zu
+LightBurn Software LLC. ezd2lbrn ist ein unabhängiges Projekt und steht in
+keiner Verbindung zu diesen Unternehmen, es wird von ihnen weder unterstützt
+noch gebilligt. Die Namen werden nur genannt, um die Kompatibilität zu
 beschreiben.
 
 Der EZD-Leseteil (Huffman-Dekompression, Objektstruktur, Feldbelegung) basiert
 auf dem EZD-Parser von MeerK40t (https://github.com/meerk40t/meerk40t),
-Copyright (c) 2021 meerk40t, MIT-Lizenz - vollstaendiger Lizenztext im Programm
-(Schaltflaeche "Lizenzen", Konstante LICENSES_Z_B64, Aufruf --lizenzen).
-Er wurde fuer ezd2lbrn neu geschrieben und erweitert.
+Copyright (c) 2021 meerk40t, MIT-Lizenz - vollständiger Lizenztext im Programm
+(Schaltfläche "Lizenzen", Konstante LICENSES_Z_B64, Aufruf --lizenzen).
+Er wurde für ezd2lbrn neu geschrieben und erweitert.
 """
 
 import argparse
@@ -39,11 +39,28 @@ import xml.etree.ElementTree as ET
 from io import BytesIO
 from xml.sax.saxutils import quoteattr
 
-VERSION = "1.7.1"
+VERSION = "1.8"
 APP_AUTHOR = "Christopher Schmick"
 APP_BRAND = "iot-simply"
 APP_URL = "https://iot-simply.com"
 APP_YEAR = "2026"
+
+
+def ausgeben(text, fehler=False):
+    """Schreibt auf die Konsole, auch wenn es gar keine gibt.
+
+    In der mit --noconsole gebauten .exe setzt PyInstaller sys.stdout und
+    sys.stderr auf None. Ein direkter Zugriff löst dort eine Ausnahme aus, für
+    die der Bootloader ein Fehlerfenster zeigt - auf einem Bauserver wartet
+    darauf niemand. Deshalb läuft jede Ausgabe über diese Funktion.
+    """
+    strom = sys.stderr if fehler else sys.stdout
+    try:
+        if strom is not None:
+            strom.write(text)
+            strom.flush()
+    except Exception:
+        pass
 
 # ---------------------------------------------------------------------------
 #  EZD-Parser
@@ -61,7 +78,7 @@ def _read_struct(f, max_items=100000, max_size=64 * 1024 * 1024):
         raise EzdError("Unerwartetes Dateiende")
     (count,) = struct.unpack("<i", raw)
     if count < 0 or count > max_items:
-        raise EzdError("Ungueltige Strukturgroesse %d" % count)
+        raise EzdError("Ungültige Strukturgröße %d" % count)
     out = []
     for _ in range(count):
         raw = f.read(4)
@@ -69,7 +86,7 @@ def _read_struct(f, max_items=100000, max_size=64 * 1024 * 1024):
             raise EzdError("Unerwartetes Dateiende")
         (ln,) = struct.unpack("<i", raw)
         if ln < 0 or ln > max_size:
-            raise EzdError("Ungueltige Feldlaenge %d" % ln)
+            raise EzdError("Ungültige Feldlänge %d" % ln)
         b = f.read(ln)
         if len(b) != ln:
             raise EzdError("Unerwartetes Dateiende")
@@ -78,7 +95,7 @@ def _read_struct(f, max_items=100000, max_size=64 * 1024 * 1024):
 
 
 def _v(b, kind=None):
-    """Feld nach Laenge/Typ interpretieren."""
+    """Feld nach Länge/Typ interpretieren."""
     if b is None:
         return None
     n = len(b)
@@ -118,7 +135,7 @@ def huffman_decode(f, out_len):
         maxlen = max(maxlen, ln)
     if not table:
         raise EzdError("Huffman-Tabelle leer")
-    # Lookup-Tabelle fuer maxlen Bits
+    # Lookup-Tabelle für maxlen Bits
     size = 1 << maxlen
     lut_ch = bytearray(size)
     lut_ln = bytearray(size)
@@ -192,7 +209,7 @@ class Obj:
         if self.container:
             (count,) = struct.unpack("<i", f.read(4))
             if count < 0 or count > 100000:
-                raise EzdError("Ungueltige Kinderanzahl")
+                raise EzdError("Ungültige Kinderanzahl")
             for _ in range(count):
                 o = parse_object(f, ezd, strict=True)
                 if o is None:
@@ -227,7 +244,7 @@ class Curve(Obj):
         super().__init__(f, ezd)
         count, closed = struct.unpack("<2I", f.read(8))
         if count > 10000000:
-            raise EzdError("Ungueltige Kurve")
+            raise EzdError("Ungültige Kurve")
         self.closed = bool(closed)
         self.segments = []
         for _ in range(count):
@@ -237,7 +254,7 @@ class Curve(Obj):
                 continue
             (n,) = struct.unpack("<i", f.read(4))
             if n < 0 or n > 10000000:
-                raise EzdError("Ungueltige Punktanzahl")
+                raise EzdError("Ungültige Punktanzahl")
             c = struct.unpack("<%dd" % (2 * n), f.read(16 * n))
             pts = [(c[i], c[i + 1]) for i in range(0, len(c), 2)]
             self.segments.append((ctype, pts))
@@ -320,7 +337,7 @@ class Image(Obj):
         f.read(2)  # "BM"
         (size,) = struct.unpack("<i", f.read(4))
         if size < 6 or size > 512 * 1024 * 1024:
-            raise EzdError("Ungueltiges Bild")
+            raise EzdError("Ungültiges Bild")
         f.read(size - 6)
         self.width = _arg(a, 5, default=0)
         self.height = _arg(a, 4, default=0)
@@ -347,7 +364,7 @@ class Text(Obj):
         self.variable = False
         (count,) = struct.unpack("<i", f.read(4))
         if count < 0 or count > 10000:
-            raise EzdError("Ungueltiger Text")
+            raise EzdError("Ungültiger Text")
         for _ in range(count):
             f.read(2)
             _read_struct(f)
@@ -421,14 +438,14 @@ def parse_object(f, ezd, strict=False):
         if strict:
             f.seek(start)
             return None
-        ezd.warn("Unbekannter Objekttyp 0x%X bei Offset %d - ueberspringe" % (t, start))
+        ezd.warn("Unbekannter Objekttyp 0x%X bei Offset %d - überspringe" % (t, start))
         return _resync(f, ezd, start + 1)
     try:
         return cls(f, ezd)
     except Exception as ex:
         if strict:
             raise
-        ezd.warn("Objekt Typ 0x%X nicht lesbar (%s) - ueberspringe" % (t, ex))
+        ezd.warn("Objekt Typ 0x%X nicht lesbar (%s) - überspringe" % (t, ex))
         return _resync(f, ezd, start + 4)
 
 
@@ -560,7 +577,7 @@ class Contour:
                 v.c1 = fn(v.c1)
 
     def sample(self):
-        """Punkte auf der Kontur (Ecken + Zwischenpunkte der Beziers) fuer Begrenzungsrahmen."""
+        """Punkte auf der Kontur (Ecken + Zwischenpunkte der Beziers) für Begrenzungsrahmen."""
         for v in self.v:
             yield (v.x, v.y)
         for t_, i, j in self.prims:
@@ -668,7 +685,7 @@ def object_contours(o, ezd):
         c.line((x0, y1))
         c.close()
         if any(abs(r) > 1e-9 for r in o.round):
-            ezd.warn("Rechteck mit abgerundeten Ecken wurde mit eckigen Ecken uebernommen")
+            ezd.warn("Rechteck mit abgerundeten Ecken wurde mit eckigen Ecken übernommen")
         c.transform(_mat_fn(o.matrix))
         return [c]
     if k == "circle":
@@ -679,7 +696,7 @@ def object_contours(o, ezd):
         (x0, y0), (x1, y1) = o.p0, o.p1
         c = ellipse_contour((x0 + x1) / 2, (y0 + y1) / 2, abs(x1 - x0) / 2, abs(y1 - y0) / 2)
         if abs((o.end_angle or 0) - (o.start_angle or 0)) > 1e-6 and abs(abs((o.end_angle or 0) - (o.start_angle or 0)) - 2 * math.pi) > 1e-3:
-            ezd.warn("Ellipsenbogen wurde als volle Ellipse uebernommen")
+            ezd.warn("Ellipsenbogen wurde als volle Ellipse übernommen")
         c.transform(_mat_fn(o.matrix))
         return [c]
     if k == "polygon":
@@ -718,7 +735,7 @@ def bbox(points):
 
 
 # ---------------------------------------------------------------------------
-#  Schriften (fuer Zeilenabstand / Zeichenabstand)
+#  Schriften (für Zeilenabstand / Zeichenabstand)
 # ---------------------------------------------------------------------------
 
 ARIAL_K = (1854 + 434) / 2048.0  # (winAscent + winDescent) / unitsPerEm
@@ -726,7 +743,7 @@ ARIAL_AVG = {False: 904 / 2048.0, True: 983 / 2048.0}  # OS/2 xAvgCharWidth Aria
 
 
 class FontMetrics:
-    """Liest Metriken einer installierten Schrift (benoetigt fontTools)."""
+    """Liest Metriken einer installierten Schrift (benötigt fontTools)."""
 
     _index = None
 
@@ -760,7 +777,7 @@ class FontMetrics:
         return self._bounds[name]
 
     def ink_width(self, s, size):
-        """Breite der sichtbaren Glyphen bei Schriftgroesse size (ohne Kerning)."""
+        """Breite der sichtbaren Glyphen bei Schriftgröße size (ohne Kerning)."""
         x = 0
         lo = hi = None
         for ch in s:
@@ -947,7 +964,7 @@ def template_extent(path):
 
 
 def contour_polyline(c):
-    """Kontur als Punktfolge (Beziers angenaehert)."""
+    """Kontur als Punktfolge (Beziers angenähert)."""
     if not c.v:
         return []
     if not c.prims:
@@ -1043,7 +1060,7 @@ def text_polylines(d):
 
 
 def build_preview(conv, ezd):
-    """Zeichendaten fuer die Vorschau: Quelle, Ziel, Schraffur, Rahmen."""
+    """Zeichendaten für die Vorschau: Quelle, Ziel, Schraffur, Rahmen."""
     W = conv.W
     src, hatch_lines = [], []
 
@@ -1137,7 +1154,7 @@ class Converter:
         self.stats = {"text": 0, "path": 0}
         self.debug_texts = []
         self.extent = []  # in EZCAD-Koordinaten
-        self.pv_paths = []  # Zielpfade fuer die Vorschau
+        self.pv_paths = []  # Zielpfade für die Vorschau
 
     def convert(self, src, dst=None, preview=False):
         ezd = EzdFile(src)
@@ -1153,20 +1170,20 @@ class Converter:
             try:
                 tb, tnotes = template_extent(self.template)
                 if tnotes:
-                    ezd.warn("Vorlage enthaelt Texte ohne Kurvenkopie (nie in LightBurn gespeichert) - "
-                             "Groesse aus Vorlage nur aus den uebrigen Objekten bestimmt")
+                    ezd.warn("Vorlage enthält Texte ohne Kurvenkopie (nie in LightBurn gespeichert) - "
+                             "Größe aus Vorlage nur aus den übrigen Objekten bestimmt")
             except Exception as ex:
-                ezd.warn("Groesse aus Vorlage nicht lesbar: %s" % ex)
+                ezd.warn("Größe aus Vorlage nicht lesbar: %s" % ex)
                 tb = None
             if not tb:
-                ezd.warn("Vorlage hat keinen auswertbaren Inhalt - Groesse nicht uebernommen")
+                ezd.warn("Vorlage hat keinen auswertbaren Inhalt - Größe nicht übernommen")
         self.tpl_outer = tb
         if tb and self.tpl_margin > 0:
             m = self.tpl_margin
             if tb[2] - tb[0] > 2 * m and tb[3] - tb[1] > 2 * m:
                 tb = (tb[0] + m, tb[1] + m, tb[2] - m, tb[3] - m)
             else:
-                ezd.warn("Rand %s mm ist groesser als der halbe Vorlagen-Kasten - ohne Rand eingepasst" % fmt(m))
+                ezd.warn("Rand %s mm ist größer als der halbe Vorlagen-Kasten - ohne Rand eingepasst" % fmt(m))
         if tb:
             x0, y0, x1, y1 = self.orig_extent
             tw, th = tb[2] - tb[0], tb[3] - tb[1]
@@ -1193,7 +1210,7 @@ class Converter:
         if self.extent:
             x0, y0, x1, y1 = bbox([self.W(p) for p in self.extent])
             if x0 < -0.01 or y0 < -0.01 or x1 > self.field + 0.01 or y1 > self.field + 0.01:
-                ezd.warn("Design (%.1f x %.1f mm) ragt ueber das Galvo-Feld von %s mm hinaus - Feldgroesse pruefen "
+                ezd.warn("Design (%.1f x %.1f mm) ragt über das Galvo-Feld von %s mm hinaus - Feldgröße prüfen "
                          "oder 'Auf Feld einpassen' nutzen" % (x1 - x0, y1 - y0, fmt(self.field)))
         self._assign_layer_indices()
         xml = self._build_xml(src)
@@ -1231,7 +1248,7 @@ class Converter:
             L = self.layers[key]
             if L.index is None:
                 if not free:
-                    raise EzdError("Mehr als 30 Layer noetig - LightBurn unterstuetzt nur 30")
+                    raise EzdError("Mehr als 30 Layer nötig - LightBurn unterstützt nur 30")
                 L.index = free.pop(0)
 
     # ---- Baum durchlaufen ----
@@ -1241,11 +1258,11 @@ class Converter:
             o = objs[i]
             nxt = objs[i + 1] if i + 1 < len(objs) else None
             if o.hidden:
-                self.ezd.warn("Ausgeblendete EZCAD-Objekte wurden nicht uebernommen")
+                self.ezd.warn("Ausgeblendete EZCAD-Objekte wurden nicht übernommen")
                 i += 1
                 continue
             if (o.array_x or 1) > 1 or (o.array_y or 1) > 1:
-                self.ezd.warn("EZCAD-Arrays wurden nur als Einzelobjekt uebernommen")
+                self.ezd.warn("EZCAD-Arrays wurden nur als Einzelobjekt übernommen")
             if o.kind == "text":
                 hatch = None
                 if nxt is not None and nxt.kind == "hatch" and not self._has_text(nxt) and \
@@ -1256,9 +1273,9 @@ class Converter:
             elif o.kind == "hatch":
                 self._emit_hatch(o, out)
             elif o.kind == "image":
-                self.ezd.warn("Bitmaps werden nicht unterstuetzt und wurden weggelassen")
+                self.ezd.warn("Bitmaps werden nicht unterstützt und wurden weggelassen")
             elif o.kind == "control":
-                self.ezd.warn("Steuerobjekte (Timer, Ein-/Ausgaenge, Achsen) wurden weggelassen")
+                self.ezd.warn("Steuerobjekte (Timer, Ein-/Ausgänge, Achsen) wurden weggelassen")
             elif o.kind in ("group", "vectorfile", "combine") and self._has_text(o):
                 sub = []
                 self._walk(o.children, sub)
@@ -1278,9 +1295,9 @@ class Converter:
     def _emit_hatch(self, h, out):
         pen = h.h1_pen if (h.supported and h.h1_on) else h.pen
         if not h.supported:
-            self.ezd.warn("Aelteres Schraffurformat: Linienabstand/Winkel als Standard (0.05 mm / 0 Grad) gesetzt")
+            self.ezd.warn("Älteres Schraffurformat: Linienabstand/Winkel als Standard (0.05 mm / 0 Grad) gesetzt")
         if self._has_text(h):
-            # Schraffur, die Textobjekte direkt enthaelt
+            # Schraffur, die Textobjekte direkt enthält
             sub = []
             for ch in h.children:
                 if ch.kind == "text":
@@ -1363,11 +1380,11 @@ class Converter:
             if len(gpts) == len(nonspace):
                 glyph_groups = gpts
             elif text.strip() and not any(ch.kind == "group" for ch in hatch.children):
-                ezd.warn("Textobjekt '%s' ist kein normaler Text (z.B. Barcode) - als Kontur uebernommen" % text[:30])
+                ezd.warn("Textobjekt '%s' ist kein normaler Text (z.B. Barcode) - als Kontur übernommen" % text[:30])
                 self._emit_hatch(hatch, out)
                 return
 
-        # Zeilenabstand: EZCAD-Zeilenabstand = (Hoehe + Zeilenluecke) * Skalierung
+        # Zeilenabstand: EZCAD-Zeilenabstand = (Höhe + Zeilenlücke) * Skalierung
         pitch = (t.height + t.line_gap) * sy
         if n > 1:
             lns = (pitch / (k * H) - 1.0) * 100.0
@@ -1376,7 +1393,7 @@ class Converter:
             lns = 0.0
             p_lb = k * H
         b_last = t.ref[1] * sy  # Grundlinie der letzten Zeile (EZCAD-Bezugspunkt)
-        ay = b_last + n * p_lb / 2.0  # Bezugspunkt fuer LightBurn Av=1
+        ay = b_last + n * p_lb / 2.0  # Bezugspunkt für LightBurn Av=1
 
         # horizontale Ausrichtung (LightBurn richtet an der sichtbaren Glyphenkante aus)
         ah = t.align if t.align in (0, 1, 2) else 0
@@ -1386,7 +1403,7 @@ class Converter:
         else:
             ax = t.ref[0] * sy / sx
 
-        # Rest-Zeichenabstand an EZCAD angleichen (HSpace, % der Schrifthoehe)
+        # Rest-Zeichenabstand an EZCAD angleichen (HSpace, % der Schrifthöhe)
         ls = 0.0
         if self.match_spacing and fm is not None and glyph_groups is not None:
             vals = []
@@ -1410,7 +1427,7 @@ class Converter:
                 ls = max(-50.0, min(100.0, ls))
 
         if t.variable:
-            ezd.warn("Variabler Text (Seriennummer/Datum/Datei) wurde als fester Text '%s' uebernommen" % text[:30])
+            ezd.warn("Variabler Text (Seriennummer/Datum/Datei) wurde als fester Text '%s' übernommen" % text[:30])
 
         wx, wy = self.W(from_U((ax, ay)))
         xa, xb, xc, xd = Xa, Xb, Xc, Xd
@@ -1575,20 +1592,20 @@ class Converter:
             out.append("\n".join("    " + ln for ln in xml.split("\n")))
         if self.size_mode == "vorlage":
             note = ("Konvertiert aus EZCAD2-Datei %s mit ezd2lbrn %s. Laserparameter vor dem ersten Lauf "
-                    "an Testmaterial pruefen." % (os.path.basename(src), VERSION))
+                    "an Testmaterial prüfen." % (os.path.basename(src), VERSION))
         else:
             note = ("Konvertiert aus EZCAD2-Datei %s mit ezd2lbrn %s. EZCAD-Mitte = %s/%s (Feld %s mm). "
-                    "Laserparameter vor dem ersten Lauf an Testmaterial pruefen."
+                    "Laserparameter vor dem ersten Lauf an Testmaterial prüfen."
                     % (os.path.basename(src), VERSION, fmt(self.off), fmt(self.off), fmt(self.field)))
         if self.size_mode == "vorlage":
-            note += (" Groesse/Lage aus Vorlage %s uebernommen (Rand %s mm): Kasten innen %.1f x %.1f mm, "
+            note += (" Größe/Lage aus Vorlage %s übernommen (Rand %s mm): Kasten innen %.1f x %.1f mm, "
                      "Mitte %.2f/%.2f." % (os.path.basename(self.template), fmt(self.tpl_margin),
                                            self.tpl_box[2] - self.tpl_box[0],
                         self.tpl_box[3] - self.tpl_box[1], (self.tpl_box[0] + self.tpl_box[2]) / 2,
                         (self.tpl_box[1] + self.tpl_box[3]) / 2))
         if abs(self.s - 1.0) > 1e-9:
-            note += (" Design skaliert auf %s %% (Texthoehen, Abstaende und Konturen; Schraffur-Linienabstand "
-                     "unveraendert)." % fmt(round(self.s * 100, 2)))
+            note += (" Design skaliert auf %s %% (Texthöhen, Abstände und Konturen; Schraffur-Linienabstand "
+                     "unverändert)." % fmt(round(self.s * 100, 2)))
         if self.ezd.warnings:
             note += " Hinweise: " + " | ".join(self.ezd.warnings)
         out.append('    <Notes ShowOnLoad="%d" Notes=%s/>' % (1 if self.ezd.warnings else 0, quoteattr(note)))
@@ -1597,394 +1614,405 @@ class Converter:
 
 
 # ---------------------------------------------------------------------------
-#  Oberflaeche
+#  Oberfläche
 # ---------------------------------------------------------------------------
 
 
-# Vollstaendige Lizenztexte der Drittkomponenten (zlib-komprimiert, base64)
+# Vollständige Lizenztexte der Drittkomponenten (zlib-komprimiert, base64)
 LICENSES_Z_B64 = (
-    "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"
+    "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"
 )
 
 
@@ -1995,44 +2023,211 @@ def licenses_text():
     return zlib.decompress(base64.b64decode("".join(LICENSES_Z_B64))).decode("utf-8", "replace")
 
 
+def lizenz_abschnitte(text):
+    """Liefert [(Überschrift, Zeilennummer)] der Abschnitte im Lizenztext.
+
+    Die Abschnitte sind von Linien aus 70 Gleichheitszeichen eingefasst; die
+    Überschrift steht in der Zeile direkt nach der öffnenden Linie.
+    """
+    zeilen = text.split("\n")
+    linien = [i for i, z in enumerate(zeilen) if z.strip() == "=" * 70]
+    gefunden = []
+    for k in range(0, len(linien) - 1, 2):
+        nr = linien[k] + 1
+        if nr < len(zeilen):
+            name = zeilen[nr].strip()
+            if name:
+                gefunden.append((name, nr + 1))
+    return gefunden
+
+
 def show_licenses(master):
     """Fenster mit allen Lizenztexten (im Programm eingebaut)."""
     import tkinter as tk
-    from tkinter import scrolledtext, ttk
+    from tkinter import filedialog, messagebox, scrolledtext, ttk
 
+    T = THEME
     _b, _bold, _t, f_mono = _ui_fonts()
+    text = licenses_text()
     w = tk.Toplevel(master)
     w.title("Lizenzen")
-    w.geometry("780x640")
-    w.configure(bg=THEME["bg"])
-    ttk.Label(w, text="Lizenz von ezd2lbrn und der verwendeten Drittkomponenten", style="Section.TLabel").pack(
-        anchor="w", padx=12, pady=(10, 4))
-    ttk.Label(w, text="EZCAD ist eine Marke von Beijing JCZ Technology, LightBurn eine Marke von LightBurn "
-                      "Software LLC. ezd2lbrn ist unabhaengig und steht in keiner Verbindung zu diesen "
-                      "Unternehmen.", style="Foot.TLabel", wraplength=740, justify="left").pack(
-        anchor="w", padx=12, pady=(0, 6))
+    w.geometry("820x660")
+    w.configure(bg=T["bg"])
+
+    kopf = ttk.Frame(w, padding=(12, 10, 12, 0))
+    kopf.pack(fill="x")
+    ttk.Label(kopf, text="Lizenz von ezd2lbrn und der verwendeten Drittkomponenten",
+              style="Section.TLabel").pack(anchor="w")
+    ttk.Label(kopf, text="EZCAD ist eine Marke von Beijing JCZ Technology, LightBurn eine Marke von LightBurn "
+                         "Software LLC. ezd2lbrn ist unabhängig und steht in keiner Verbindung zu diesen "
+                         "Unternehmen.", style="Foot.TLabel", wraplength=780, justify="left").pack(
+        anchor="w", pady=(2, 0))
+
     t = scrolledtext.ScrolledText(w, font=f_mono, wrap="word", bd=0, relief="flat", padx=10, pady=8,
-                                  highlightthickness=1, highlightbackground=THEME["line"])
-    t.pack(fill="both", expand=True, padx=12)
-    t.insert("1.0", licenses_text())
+                                  highlightthickness=1, highlightbackground=T["line"],
+                                  bg=T["log_bg"], fg=T["ink"], insertbackground=T["ink"])
+    t.insert("1.0", text)
     t.configure(state="disabled")
-    ttk.Button(w, text="Schliessen", command=w.destroy).pack(anchor="e", padx=12, pady=10)
+
+    leiste = ttk.Frame(w, padding=(12, 8))
+    leiste.pack(fill="x")
+    abschnitte = lizenz_abschnitte(text)
+    if abschnitte:
+        ttk.Label(leiste, text="Abschnitt").pack(side="left", padx=(0, 6))
+        v_abschnitt = tk.StringVar(value=abschnitte[0][0])
+        cb = ttk.Combobox(leiste, textvariable=v_abschnitt, state="readonly", width=36,
+                          values=[a for a, _z in abschnitte])
+        cb.pack(side="left")
+
+        def springen(_e=None):
+            for name, zeile in abschnitte:
+                if name == v_abschnitt.get():
+                    t.yview("%d.0" % zeile)
+                    return
+
+        cb.bind("<<ComboboxSelected>>", springen)
+
+    def speichern():
+        ziel = filedialog.asksaveasfilename(
+            parent=w, title="Lizenztexte speichern", defaultextension=".txt",
+            initialfile="ezd2lbrn-%s-lizenzen.txt" % VERSION,
+            filetypes=[("Textdatei", "*.txt"), ("Alle", "*.*")])
+        if not ziel:
+            return
+        try:
+            with open(ziel, "w", encoding="utf-8") as fh:
+                fh.write(text)
+        except OSError as ex:
+            messagebox.showerror("Lizenzen", "Konnte nicht gespeichert werden:\n%s" % ex, parent=w)
+            return
+        messagebox.showinfo("Lizenzen", "Gespeichert:\n%s" % ziel, parent=w)
+
+    ttk.Button(leiste, text="Schließen", command=w.destroy).pack(side="right")
+    ttk.Button(leiste, text="Als Datei speichern", command=speichern).pack(side="right", padx=8)
+    t.pack(fill="both", expand=True, padx=12, pady=(8, 0))
+    w.bind("<Escape>", lambda e: w.destroy())
+    return w
+
+
+def einstellungsordner_oeffnen():
+    """Öffnet den Ordner mit der Einstellungsdatei im Dateimanager."""
+    ordner = os.path.dirname(settings_path())
+    try:
+        if sys.platform.startswith("win"):
+            os.startfile(ordner)  # noqa: S606
+        else:
+            import subprocess
+            subprocess.Popen(["xdg-open" if sys.platform.startswith("linux") else "open", ordner])
+    except Exception as ex:
+        ausgeben("Ordner ließ sich nicht öffnen: %s\n" % ex, fehler=True)
+
+
+def info_zeigen(master, v_design=None, design_wechseln=None):
+    """Info-Fenster: Typenschild, Zweck, Gefahrenhinweis, Copyright, Marken."""
+    import tkinter as tk
+    from tkinter import ttk
+
+    T = THEME
+    f_body, f_bold, _f_title, _f_mono = _ui_fonts()
+    w = tk.Toplevel(master)
+    w.title("Info")
+    w.configure(bg=T["bg"])
+    w.resizable(False, False)
+    try:
+        w.transient(master)
+    except Exception:
+        pass
+
+    logo = load_logo(tk, w, 44)
+    w._logo = logo  # Verweis halten, sonst raeumt Tk das Bild weg
+    kopf = tk.Canvas(w, height=84, width=600, bg=T["bg"], highlightthickness=0)
+    kopf.pack(fill="x", padx=10, pady=(10, 2))
+    kopf.bind("<Configure>", lambda e: draw_nameplate(
+        kopf, logo, "ezd2lbrn", "EZCAD2 (.ezd) nach LightBurn (.lbrn2)"))
+
+    leib = ttk.Frame(w, padding=(16, 8, 16, 4))
+    leib.pack(fill="both", expand=True)
+
+    ttk.Label(leib, text="Fassung %s" % VERSION, style="Section.TLabel").pack(anchor="w")
+    ttk.Label(leib, text="Wandelt EZCAD2-Projektdateien (.ezd) in LightBurn-Projekte (.lbrn2) um. Texte bleiben "
+                         "bearbeitbare LightBurn-Textobjekte statt Kurven. Läuft vollständig offline, es werden "
+                         "keine Daten übertragen.",
+              wraplength=580, justify="left").pack(anchor="w", pady=(2, 10))
+
+    # Gefahrenhinweis, abgesetzt
+    kasten = tk.Frame(leib, bg=T["warn_bg"], highlightthickness=1, highlightbackground=T["warn_rand"],
+                      highlightcolor=T["warn_rand"], padx=12, pady=10)
+    kasten.pack(fill="x")
+    tk.Label(kasten, text="Verwendung auf eigene Gefahr", bg=T["warn_bg"], fg=T["ink"], font=f_bold,
+             anchor="w").pack(fill="x")
+    tk.Label(kasten, bg=T["warn_bg"], fg=T["ink"], font=f_body, justify="left", wraplength=560, anchor="w",
+             text="ezd2lbrn wird ohne jede Gewährleistung weitergegeben. Das Programm steuert keinen Laser, "
+                  "die erzeugte Datei enthält jedoch Laserparameter aus der EZD-Datei oder aus Ihrer Vorlage.\n\n"
+                  "Prüfen Sie Geometrie, Größe, Position, Fokus und sämtliche Laserparameter in LightBurn und "
+                  "erproben Sie jede Umwandlung an Testmaterial, bevor Sie ein Werkstück bearbeiten. Für Schäden "
+                  "an Werkstück, Maschine, Optik, Augen oder Personen wird keine Haftung übernommen. Die "
+                  "Sicherheitsregeln für den Betrieb Ihres Lasers gelten unverändert.").pack(fill="x", pady=(4, 0))
+
+    ttk.Label(leib, text="© %s %s" % (APP_YEAR, APP_AUTHOR), style="Section.TLabel").pack(anchor="w", pady=(12, 0))
+    ttk.Label(leib, text="Open Source unter der MIT-Lizenz: frei nutzbar, veränderbar und weitergebbar, "
+                         "solange Copyright- und Lizenzhinweis erhalten bleiben.",
+              wraplength=580, justify="left").pack(anchor="w", pady=(2, 0))
+
+    def web():
+        import webbrowser
+        webbrowser.open(APP_URL)
+
+    ttk.Button(leib, text=APP_URL.split("//")[-1], style="Link.TButton", command=web,
+               takefocus=False, cursor="hand2").pack(anchor="w", pady=(2, 10))
+
+    ttk.Label(leib, text="Marken", style="Section.TLabel").pack(anchor="w")
+    ttk.Label(leib, text="EZCAD ist eine Marke von Beijing JCZ Technology Co., Ltd., LightBurn eine Marke von "
+                         "LightBurn Software, LLC. ezd2lbrn ist ein unabhängiges Programm, steht in keiner "
+                         "Verbindung zu diesen Unternehmen und liefert keine Programmteile dieser Hersteller "
+                         "mit. Einzelheiten im Fenster „Lizenzen“.",
+              wraplength=580, justify="left").pack(anchor="w", pady=(2, 10))
+
+    ttk.Label(leib, text="Ablage", style="Section.TLabel").pack(anchor="w")
+    ttk.Label(leib, text="Einstellungen: %s" % settings_path(),
+              wraplength=580, justify="left", style="Foot.TLabel").pack(anchor="w", pady=(2, 0))
+    ttk.Label(leib, text="Eine logo.png neben dem Programm ersetzt das Logo im Kopfbereich.",
+              wraplength=580, justify="left", style="Foot.TLabel").pack(anchor="w")
+
+    if v_design is not None and design_wechseln is not None:
+        ttk.Checkbutton(leib, text="Dunkles Design", variable=v_design, onvalue="dunkel", offvalue="hell",
+                        command=design_wechseln, style="Bar.TCheckbutton").pack(anchor="w", pady=(10, 0))
+
+    knoepfe = ttk.Frame(w, padding=(16, 8, 16, 12))
+    knoepfe.pack(fill="x")
+    ttk.Button(knoepfe, text="Einstellungsordner öffnen", command=einstellungsordner_oeffnen).pack(side="left")
+    ttk.Button(knoepfe, text="Schließen", style="Accent.TButton", command=w.destroy).pack(side="right")
+    ttk.Button(knoepfe, text="Lizenzen", command=lambda: show_licenses(w)).pack(side="right", padx=8)
+
+    w.bind("<Escape>", lambda e: w.destroy())
+    w.update_idletasks()
+    try:
+        x = master.winfo_rootx() + (master.winfo_width() - w.winfo_width()) // 2
+        y = master.winfo_rooty() + max(0, (master.winfo_height() - w.winfo_height()) // 3)
+        w.geometry("+%d+%d" % (max(0, x), max(0, y)))
+    except Exception:
+        pass
+    return w
 
 
 def run_cli(argv):
     ap = argparse.ArgumentParser(description="EZCAD2 .ezd -> LightBurn .lbrn2 (Texte bleiben bearbeitbar)")
     ap.add_argument("eingabe", nargs="+", help=".ezd-Datei(en)")
     ap.add_argument("-o", "--ausgabe", help="Ausgabedatei (bei einer Eingabe) oder Ordner")
-    ap.add_argument("--feld", type=float, default=110.0, help="Galvo-Feldgroesse in mm (Standard 110)")
+    ap.add_argument("--feld", type=float, default=110.0, help="Galvo-Feldgröße in mm (Standard 110)")
     ap.add_argument("--einpassen", action="store_true",
-                    help="Design gleichmaessig verkleinern, bis es ins Feld passt (Skalierung um die EZCAD-Mitte)")
+                    help="Design gleichmäßig verkleinern, bis es ins Feld passt (Skalierung um die EZCAD-Mitte)")
     ap.add_argument("--rand", type=float, default=1.0, help="Rand zum Feldrand beim Einpassen in mm (Standard 1)")
     ap.add_argument("--skalierung", type=float, default=100.0, help="Feste Skalierung in %% (ohne --einpassen)")
     ap.add_argument("--vorlage-groesse", action="store_true",
-                    help="Groesse und Lage des Inhalts der Vorlage uebernehmen (proportional eingepasst, mittig)")
+                    help="Größe und Lage des Inhalts der Vorlage übernehmen (proportional eingepasst, mittig)")
     ap.add_argument("--vorlage-rand", type=float, default=0.0,
                     help="Abstand zum Vorlagen-Kasten in mm bei --vorlage-groesse (Standard 0)")
-    ap.add_argument("--vorlage", help=".lbrn2-Vorlage fuer Geraet und Layer-Parameter (Layer-Nr. = EZCAD-Stift)")
+    ap.add_argument("--vorlage", help=".lbrn2-Vorlage für Gerät und Layer-Parameter (Layer-Nr. = EZCAD-Stift)")
     ap.add_argument("--ohne-zeichenabstand", action="store_true", help="Zeichenabstand nicht an EZCAD angleichen")
     ap.add_argument("--schrift", action="append", default=[], metavar="ALT=NEU",
                     help="Schrift ersetzen, z.B. --schrift Romans=Arial")
@@ -2050,13 +2245,13 @@ def run_cli(argv):
         dst = _target(src, a.ausgabe, len(a.eingabe))
         try:
             ezd, st = conv.convert(src, dst)
-            print("OK  %s -> %s  (%d Texte, %d Pfade, Skalierung %.2f %%)"
-                  % (src, dst, st["text"], st["path"], st["scale"] * 100))
+            ausgeben("OK  %s -> %s  (%d Texte, %d Pfade, Skalierung %.2f %%)\n"
+                     % (src, dst, st["text"], st["path"], st["scale"] * 100))
             for w in ezd.warnings:
-                print("    Hinweis: " + w)
+                ausgeben("    Hinweis: " + w + "\n")
         except Exception as ex:
             rc = 1
-            print("FEHLER  %s: %s" % (src, ex))
+            ausgeben("FEHLER  %s: %s\n" % (src, ex), fehler=True)
     return rc
 
 
@@ -2117,7 +2312,7 @@ def ezd_fonts(path):
 #  Erscheinungsbild
 # ---------------------------------------------------------------------------
 
-# iot-simply Logo (freigestellt, fuer dunklen Hintergrund) und Programmsymbol
+# iot-simply Logo (freigestellt, für dunklen Hintergrund) und Programmsymbol
 LOGO_PNG_B64 = (
     "iVBORw0KGgoAAAANSUhEUgAAAcAAAAB4CAMAAABSFdLtAAAAwFBMVEUCBAPv9P4BEB1gyv5p2/ry9/hk0Pzo7fWW6vwBEyII"
     "H1Ho7PFatvNes+5UGROQ6vxfZF4AEyMSVmUSMk8dUxekpKUfTWYPMU2coaYkaZUsa5FVVyISNlQfS2NejaRelqhbX2Wan6ko"
@@ -2275,19 +2470,69 @@ ICON_PNG_B64 = (
     "h3BIEUGLr8P+k5zhBDRn8Bea3H8B6Jq5Kj8PWfoAAAAASUVORK5CYII="
 )
 
-THEME = {
-    "bg": "#E8EBEE",       # kuehles Hellgrau (Werkstattwand)
-    "panel": "#F6F7F8",    # Arbeitsflaechen
-    "ink": "#1E2830",      # Graphit, Schrift
-    "muted": "#5E6973",    # Nebentexte
-    "line": "#C3CAD1",     # Linien, Rahmen
-    "accent": "#1C74AE",   # iot-simply Blau, abgedunkelt fuer weisse Schrift
-    "accent_hi": "#2687C6",
-    "brand": "#5FC8FD",    # iot-simply Blau (Logo)
-    "plate_hi": "#1B2839", # schwarz eloxiertes Typenschild, hell
-    "plate_lo": "#0C1321", # Logo-Hintergrund
-    "plate_edge": "#33465E",
+THEMEN = {
+    "hell": {
+        "bg": "#E8EBEE",       # kühles Hellgrau (Werkstattwand)
+        "panel": "#F6F7F8",    # Arbeitsflächen
+        "ink": "#1E2830",      # Graphit, Schrift
+        "muted": "#5E6973",    # Nebentexte
+        "line": "#C3CAD1",     # Linien, Rahmen
+        "accent": "#1C74AE",   # iot-simply Blau, abgedunkelt für weiße Schrift
+        "accent_hi": "#2687C6",
+        "brand": "#5FC8FD",    # iot-simply Blau (Logo)
+        "feld": "white",       # Eingabefelder, Listen
+        "knopf": "#DDE2E6",
+        "knopf_an": "#CFD6DC",
+        "knopf_zu": "#C3CAD1",
+        "log_bg": "white",
+        "ok": "#1B6E3A",       # Meldungen im Log
+        "fehler": "#B3261E",
+        "hinweis": "#8A5A00",
+        "warn": "#B3261E",     # Gefahrenhinweis in der Fußzeile
+        "warn_bg": "#FFF3CD",  # Gefahrenkasten im Info-Fenster
+        "warn_rand": "#E8A33D",
+        "plate_hi": "#1B2839", # schwarz eloxiertes Typenschild, hell
+        "plate_lo": "#0C1321", # Logo-Hintergrund
+        "plate_edge": "#33465E",
+    },
+    "dunkel": {
+        "bg": "#1C2126",
+        "panel": "#252B31",
+        "ink": "#E6EAEE",
+        "muted": "#9AA5B1",
+        "line": "#3A424B",
+        "accent": "#2E8FD0",
+        "accent_hi": "#4AA6E2",
+        "brand": "#5FC8FD",
+        "feld": "#2E353C",
+        "knopf": "#333B43",
+        "knopf_an": "#3E474F",
+        "knopf_zu": "#2B3239",
+        "log_bg": "#171B1F",
+        "ok": "#63D18C",
+        "fehler": "#FF8A80",
+        "hinweis": "#E6B457",
+        "warn": "#FF8A80",
+        "warn_bg": "#3B2F12",
+        "warn_rand": "#E8A33D",
+        "plate_hi": "#1B2839",
+        "plate_lo": "#0C1321",
+        "plate_edge": "#33465E",
+    },
 }
+
+# Aktives Design. Wird in sich geändert statt ersetzt, damit Verweise wie
+# "T = THEME" in laufenden Fenstern gültig bleiben.
+THEME = dict(THEMEN["hell"])
+
+
+def design_setzen(name):
+    """Schaltet das aktive Design um und liefert den tatsächlich gesetzten Namen."""
+    if name not in THEMEN:
+        name = "hell"
+    THEME.clear()
+    THEME.update(THEMEN[name])
+    return name
 
 
 def _ui_fonts():
@@ -2362,27 +2607,34 @@ def apply_theme(win, ttk):
     st.configure("Section.TLabel", background=T["bg"], foreground=T["accent"], font=f_bold)
     st.configure("TCheckbutton", background=T["panel"])
     st.map("TCheckbutton", background=[("active", T["panel"])],
-           indicatorcolor=[("selected", T["accent"]), ("!selected", "white")])
+           indicatorcolor=[("selected", T["accent"]), ("!selected", T["feld"])])
     st.configure("TRadiobutton", background=T["bg"])
     st.map("TRadiobutton", background=[("active", T["bg"])],
-           indicatorcolor=[("selected", T["accent"]), ("!selected", "white")])
+           indicatorcolor=[("selected", T["accent"]), ("!selected", T["feld"])])
     st.configure("Bar.TCheckbutton", background=T["bg"])
     st.map("Bar.TCheckbutton", background=[("active", T["bg"])])
-    st.configure("TEntry", fieldbackground="white", bordercolor=T["line"], padding=3)
+    st.configure("TEntry", fieldbackground=T["feld"], foreground=T["ink"], insertcolor=T["ink"],
+                 bordercolor=T["line"], padding=3)
     st.map("TEntry", fieldbackground=[("disabled", T["bg"])], foreground=[("disabled", T["muted"])])
-    st.configure("TCombobox", fieldbackground="white", padding=2, arrowcolor=T["ink"])
-    st.map("TCombobox", fieldbackground=[("readonly", "white"), ("disabled", T["bg"])],
-           selectbackground=[("readonly", "white")], selectforeground=[("readonly", T["ink"])])
-    st.configure("TButton", background="#DDE2E6", padding=(10, 4))
-    st.map("TButton", background=[("active", "#CFD6DC"), ("pressed", "#C3CAD1")])
+    st.configure("TCombobox", fieldbackground=T["feld"], foreground=T["ink"], padding=2, arrowcolor=T["ink"])
+    st.map("TCombobox", fieldbackground=[("readonly", T["feld"]), ("disabled", T["bg"])],
+           selectbackground=[("readonly", T["feld"])], selectforeground=[("readonly", T["ink"])])
+    # Das Klappmenü der Comboboxen ist ein klassisches tk-Widget und folgt nur der Optionsdatenbank.
+    win.option_add("*TCombobox*Listbox.background", T["feld"])
+    win.option_add("*TCombobox*Listbox.foreground", T["ink"])
+    win.option_add("*TCombobox*Listbox.selectBackground", T["accent"])
+    win.option_add("*TCombobox*Listbox.selectForeground", "white")
+    st.configure("TButton", background=T["knopf"], foreground=T["ink"], padding=(10, 4))
+    st.map("TButton", background=[("active", T["knopf_an"]), ("pressed", T["knopf_zu"])])
     st.configure("Accent.TButton", background=T["accent"], foreground="white", font=f_bold, padding=(18, 6),
                  bordercolor=T["accent"])
     st.map("Accent.TButton", background=[("active", T["accent_hi"]), ("pressed", T["accent"])],
            foreground=[("disabled", "#DDE6EA")])
     st.configure("Link.TButton", background=T["bg"], foreground=T["accent"], borderwidth=0, padding=(4, 0))
     st.map("Link.TButton", background=[("active", T["bg"])], foreground=[("active", T["accent_hi"])])
-    st.configure("Treeview", background="white", fieldbackground="white", rowheight=22, bordercolor=T["line"])
-    st.configure("Treeview.Heading", background="#DDE2E6", font=f_bold)
+    st.configure("Treeview", background=T["feld"], fieldbackground=T["feld"], foreground=T["ink"],
+                 rowheight=22, bordercolor=T["line"])
+    st.configure("Treeview.Heading", background=T["knopf"], foreground=T["ink"], font=f_bold)
     st.map("Treeview", background=[("selected", T["accent"])], foreground=[("selected", "white")])
     return st
 
@@ -2395,7 +2647,7 @@ def draw_nameplate(cv, logo, title, subtitle):
     w = max(cv.winfo_width(), 300)
     h = int(cv["height"])
     x0, y0, x1, y1 = 10, 8, w - 10, h - 4
-    # gebuerstetes Aluminium: feine Verlaufslinien
+    # gebürstetes Aluminium: feine Verlaufslinien
     hi = [int(T["plate_hi"][i:i + 2], 16) for i in (1, 3, 5)]
     lo = [int(T["plate_lo"][i:i + 2], 16) for i in (1, 3, 5)]
     for y in range(y0, y1):
@@ -2421,7 +2673,7 @@ def draw_nameplate(cv, logo, title, subtitle):
 
 
 class PreviewWindow(object):
-    """Vorschau-Fenster: Quelle (EZD), Ziel (LightBurn-Nachbildung), ueberlagert."""
+    """Vorschau-Fenster: Quelle (EZD), Ziel (LightBurn-Nachbildung), überlagert."""
 
     COL_SRC = "#202020"
     COL_DST = "#d0021b"
@@ -2454,7 +2706,7 @@ class PreviewWindow(object):
                               values=[os.path.basename(f) for f in self.files])
             cb.pack(side="left", padx=(0, 8))
             cb.bind("<<ComboboxSelected>>", lambda e: self.load())
-        for val, txt in (("beide", "Ueberlagert"), ("quelle", "Quelle"), ("ziel", "Ziel")):
+        for val, txt in (("beide", "Überlagert"), ("quelle", "Quelle"), ("ziel", "Ziel")):
             ttk.Radiobutton(bar, text=txt, value=val, variable=self.v_mode, command=self.apply_vis).pack(
                 side="left", padx=(0, 6))
         ttk.Checkbutton(bar, text="Schraffur", variable=self.v_hatch, command=self.apply_vis,
@@ -2485,7 +2737,7 @@ class PreviewWindow(object):
             tk.Label(leg, text="\u25a0 " + txt, fg=col, bg=THEME["bg"]).pack(side="left", padx=(0, 12))
         tk.Label(bot, anchor="w", justify="left", fg="#8a5a00", bg=THEME["bg"], wraplength=960,
                  text="Hinweis: Die Zielansicht ist eine Nachbildung des LightBurn-Textsatzes mit der installierten "
-                      "Schrift. Massgeblich ist die Darstellung in LightBurn. Mausrad = Zoom, linke Maustaste = "
+                      "Schrift. Maßgeblich ist die Darstellung in LightBurn. Mausrad = Zoom, linke Maustaste = "
                       "verschieben.").pack(fill="x")
         self.load()
 
@@ -2590,7 +2842,7 @@ class PreviewWindow(object):
         try:
             from PIL import Image, ImageDraw
         except ImportError:
-            messagebox.showinfo("PNG", "Fuer den PNG-Export wird Pillow benoetigt:\npython -m pip install pillow")
+            messagebox.showinfo("PNG", "Für den PNG-Export wird Pillow benötigt:\npython -m pip install pillow")
             return
         dst = filedialog.asksaveasfilename(
             parent=self.win, defaultextension=".png", filetypes=[("PNG", "*.png")],
@@ -2639,7 +2891,8 @@ def run_gui():
     win = tk.Tk()
     win.title("ezd2lbrn %s - EZCAD2 zu LightBurn" % VERSION)
     win.geometry(cfg.get("fenster", "820x860"))
-    win.minsize(760, 720)
+    win.minsize(760, 640)
+    v_design = tk.StringVar(value=design_setzen(cfg.get("design", "hell")))
     apply_theme(win, ttk)
     files = []
     v_out = tk.StringVar(value=cfg.get("ziel", ""))
@@ -2653,28 +2906,37 @@ def run_gui():
     v_scale = tk.StringVar(value=cfg.get("skalierung", "100"))
     v_src_font = tk.StringVar()
     v_dst_font = tk.StringVar()
-    v_files = tk.StringVar(value="Noch keine Datei gewaehlt")
+    v_files = tk.StringVar(value="Noch keine Datei gewählt")
     font_map = dict(cfg.get("schriften", {}))  # Quelle -> Ziel (Originalschreibweise)
     last_in = [cfg.get("quelle_ordner", "")]
 
     sys_fonts = sorted({f for f in tkfont.families(win) if not f.startswith("@")}, key=str.lower)
     sys_lower = {f.lower() for f in sys_fonts}
 
-    # ---- Kopf: Typenschild ----
-    logo = load_logo(tk, win, 56)
+    # ---- Programmsymbol (das Typenschild steht im Info-Fenster) ----
     small_logo = load_logo(tk, win, 32, icon=True)
     if small_logo is not None:
         try:
             win.iconphoto(True, small_logo)
         except Exception:
             pass
-    head = tk.Canvas(win, height=96, bg=T["bg"], highlightthickness=0)
-    head.pack(fill="x", padx=6, pady=(6, 0))
-    head.bind("<Configure>", lambda e: draw_nameplate(
-        head, logo, "ezd2lbrn", "EZCAD2-Dateien in bearbeitbare LightBurn-Projekte umwandeln"))
+
+    gefaerbt = []
+
+    def faerben(widget, **zuordnung):
+        """Merkt sich einfache tk-Widgets, damit der Designwechsel sie erreicht."""
+        gefaerbt.append((widget, zuordnung))
+        widget.configure(**{opt: THEME[schluessel] for opt, schluessel in zuordnung.items()})
+        return widget
 
     foot = ttk.Frame(win, padding=(14, 2, 14, 8))
     foot.pack(side="bottom", fill="x")
+    warnzeile = faerben(
+        tk.Label(win, anchor="w", font=f_body,
+                 text="Auf eigene Gefahr: Laserparameter, Position und Fokus vor dem ersten Lauf an "
+                      "Testmaterial prüfen."),
+        bg="bg", fg="warn")
+    warnzeile.pack(side="bottom", fill="x", padx=14, pady=(0, 2))
     body = ttk.Frame(win, padding=(14, 10, 14, 4))
     body.pack(fill="both", expand=True)
 
@@ -2694,13 +2956,13 @@ def run_gui():
             "vorlage_groesse": v_tpl_size.get(), "vorlage_rand": v_tpl_margin.get(),
             "zeichenabstand": v_ls.get(), "einpassen": v_fit.get(), "rand": v_margin.get(),
             "skalierung": v_scale.get(), "schriften": font_map, "quelle_ordner": last_in[0],
-            "fenster": win.geometry(),
+            "fenster": win.geometry(), "design": v_design.get(),
         })
         save_settings(cfg)
 
     # ---- Dateien ----
     def pick_files():
-        sel = filedialog.askopenfilenames(title="EZD-Dateien waehlen", initialdir=last_in[0] or None,
+        sel = filedialog.askopenfilenames(title="EZD-Dateien wählen", initialdir=last_in[0] or None,
                                           filetypes=[("EZCAD2", "*.ezd"), ("Alle", "*.*")])
         if not sel:
             return
@@ -2756,7 +3018,7 @@ def run_gui():
     def add_font():
         a_, b_ = v_src_font.get().strip(), v_dst_font.get().strip()
         if not a_ or not b_:
-            messagebox.showinfo("Schrift ersetzen", "Bitte Quelle und Ziel waehlen.")
+            messagebox.showinfo("Schrift ersetzen", "Bitte Quelle und Ziel wählen.")
             return
         for k_ in list(font_map):
             if k_.lower() == a_.lower():
@@ -2795,10 +3057,10 @@ def run_gui():
             scale = float(v_scale.get().replace(",", "."))
             tpl_margin = float(v_tpl_margin.get().replace(",", ".") or 0)
         except ValueError:
-            messagebox.showerror("Fehler", "Feldgroesse, Rand oder Skalierung ist keine Zahl.")
+            messagebox.showerror("Fehler", "Feldgröße, Rand oder Skalierung ist keine Zahl.")
             return None
         if scale <= 0 or field <= 0:
-            messagebox.showerror("Fehler", "Feldgroesse und Skalierung muessen groesser 0 sein.")
+            messagebox.showerror("Fehler", "Feldgröße und Skalierung müssen größer 0 sein.")
             return None
         tpl = v_tpl.get() or None
         if tpl and not os.path.isfile(tpl):
@@ -2839,13 +3101,13 @@ def run_gui():
 
     def go():
         if not files:
-            messagebox.showwarning("Hinweis", "Bitte zuerst EZD-Dateien waehlen.")
+            messagebox.showwarning("Hinweis", "Bitte zuerst EZD-Dateien wählen.")
             return
         convert_files(files)
 
     def preview():
         if not files:
-            messagebox.showwarning("Hinweis", "Bitte zuerst EZD-Dateien waehlen.")
+            messagebox.showwarning("Hinweis", "Bitte zuerst EZD-Dateien wählen.")
             return
         if make_converter() is None:
             return
@@ -2853,38 +3115,37 @@ def run_gui():
         def mk():
             c_ = make_converter()
             if c_ is None:
-                raise EzdError("Einstellungen ungueltig")
+                raise EzdError("Einstellungen ungültig")
             return c_
 
         PreviewWindow(win, files, mk, log)
 
-    def about():
-        messagebox.showinfo(
-            "Info",
-            "ezd2lbrn %s\nEZCAD2 (.ezd) zu LightBurn (.lbrn2), offline.\n\n"
-            "\u00a9 %s %s\n%s\n\nOpen Source unter der MIT-Lizenz: frei nutzbar,\n"
-            "veraenderbar und weitergebbar, ohne Gewaehrleistung.\n\n"
-            "Enthaelt Teile auf Basis von MeerK40t (MIT) und verwendet\n"
-            "fontTools (MIT) und Pillow (MIT-CMU). Vollstaendige Lizenztexte:\n"
-            "Schaltflaeche \"Lizenzen\" unten rechts.\n\n"
-            "EZCAD ist eine Marke von Beijing JCZ Technology, LightBurn eine\n"
-            "Marke von LightBurn Software LLC. ezd2lbrn ist unabhaengig und\n"
-            "steht in keiner Verbindung zu diesen Unternehmen.\n\n"
-            "Keine Gewaehrleistung: Laserparameter und Ergebnis vor dem ersten\n"
-            "Lauf immer an Testmaterial pruefen.\n\n"
-            "Einstellungen: %s" % (VERSION, APP_YEAR, APP_AUTHOR, APP_URL.split("//")[-1], settings_path()))
+    def design_wechseln():
+        """Hell/Dunkel umschalten und alle Fenster nachfärben."""
+        design_setzen(v_design.get())
+        apply_theme(win, ttk)
+        for widget, zuordnung in gefaerbt:
+            try:
+                widget.configure(**{opt: THEME[schluessel] for opt, schluessel in zuordnung.items()})
+            except Exception:
+                pass
+        log_farben()
+        store()
+
+    def info():
+        info_zeigen(win, v_design, design_wechseln)
 
     # ---- Layout ----
     def section(title):
-        """Abschnitt: Ueberschrift auf dem Fensterhintergrund, darunter eine helle Flaeche mit Rahmen."""
+        """Abschnitt: Überschrift auf dem Fensterhintergrund, darunter eine helle Fläche mit Rahmen."""
         ttk.Label(body, text=title, style="Section.TLabel").pack(anchor="w", pady=(2, 3))
-        box = tk.Frame(body, bg=T["panel"], highlightthickness=1, highlightbackground=T["line"],
-                       highlightcolor=T["line"], padx=10, pady=8)
+        box = faerben(tk.Frame(body, highlightthickness=1, padx=10, pady=8),
+                      bg="panel", highlightbackground="line", highlightcolor="line")
         box.pack(fill="x", pady=(0, 10))
         return box
 
     s1 = section("Dateien")
-    ttk.Button(s1, text="EZD-Dateien waehlen ...", command=pick_files, width=24).grid(row=0, column=0, sticky="w")
+    ttk.Button(s1, text="EZD-Dateien wählen ...", command=pick_files, width=24).grid(row=0, column=0, sticky="w")
     ttk.Label(s1, textvariable=v_files, style="Muted.TLabel").grid(row=0, column=1, sticky="w", padx=10)
     ttk.Button(s1, text="Zielordner ...", command=pick_out, width=24).grid(row=1, column=0, sticky="w", pady=(6, 0))
     ttk.Entry(s1, textvariable=v_out).grid(row=1, column=1, sticky="we", padx=(10, 0), pady=(6, 0))
@@ -2894,7 +3155,7 @@ def run_gui():
     ttk.Button(s2, text="Vorlage ...", command=pick_tpl, width=24).grid(row=0, column=0, sticky="w")
     ttk.Entry(s2, textvariable=v_tpl).grid(row=0, column=1, sticky="we", padx=(10, 4))
     ttk.Button(s2, text="Entfernen", command=clear_tpl).grid(row=0, column=2)
-    cb_tpl_size = ttk.Checkbutton(s2, text="Groesse und Lage aus Vorlage uebernehmen", variable=v_tpl_size,
+    cb_tpl_size = ttk.Checkbutton(s2, text="Größe und Lage aus Vorlage übernehmen", variable=v_tpl_size,
                                   command=upd)
     cb_tpl_size.grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 0))
     rf = ttk.Frame(s2, style="Panel.TFrame")
@@ -2902,11 +3163,11 @@ def run_gui():
     ttk.Label(rf, text="Rand zum Kasten (mm)", style="Panel.TLabel").pack(side="left", padx=(0, 6))
     e_tpl_margin = ttk.Entry(rf, textvariable=v_tpl_margin, width=6)
     e_tpl_margin.pack(side="left")
-    ttk.Label(s2, text="Uebernimmt Geraet und Laserparameter (Layer-Nr. = EZCAD-Stift).",
+    ttk.Label(s2, text="Übernimmt Gerät und Laserparameter (Layer-Nr. = EZCAD-Stift).",
               style="Muted.TLabel").grid(row=2, column=0, columnspan=3, sticky="w", pady=(4, 0))
     s2.columnconfigure(1, weight=1)
 
-    s3 = section("Feld und Groesse")
+    s3 = section("Feld und Größe")
     ttk.Label(s3, text="Galvo-Feld (mm)", style="Panel.TLabel").grid(row=0, column=0, sticky="w")
     ttk.Entry(s3, textvariable=v_field, width=7).grid(row=0, column=1, sticky="w", padx=(6, 30))
     ttk.Label(s3, text="Skalierung (%)", style="Panel.TLabel").grid(row=0, column=2, sticky="w", padx=(24, 0))
@@ -2928,7 +3189,7 @@ def run_gui():
     ttk.Label(s4, text="Ziel (installiert)", style="Panel.TLabel").grid(row=0, column=2, sticky="w")
     cb_dst = ttk.Combobox(s4, textvariable=v_dst_font, width=24, values=sys_fonts, state="readonly")
     cb_dst.grid(row=0, column=3, sticky="w", padx=(6, 8))
-    ttk.Button(s4, text="Hinzufuegen", command=add_font).grid(row=0, column=4, sticky="e")
+    ttk.Button(s4, text="Hinzufügen", command=add_font).grid(row=0, column=4, sticky="e")
     tree = ttk.Treeview(s4, columns=("q", "z"), show="headings", height=3)
     tree.heading("q", text="Quelle (EZCAD)")
     tree.heading("z", text="Ziel (LightBurn)")
@@ -2942,34 +3203,31 @@ def run_gui():
     ttk.Button(act, text="Konvertieren", style="Accent.TButton", command=go).pack(side="left")
     ttk.Button(act, text="Vorschau ...", command=preview).pack(side="left", padx=8)
 
-    logf = tk.Frame(body, bg=T["line"], bd=0)
+    logf = faerben(tk.Frame(body, bd=0), bg="line")
     logf.pack(fill="both", expand=True)
-    txt = scrolledtext.ScrolledText(logf, height=9, state="disabled", font=f_mono, bd=0, relief="flat",
-                                    bg="white", fg=T["ink"], padx=8, pady=6, highlightthickness=0)
+    txt = faerben(scrolledtext.ScrolledText(logf, height=9, state="disabled", font=f_mono, bd=0, relief="flat",
+                                            padx=8, pady=6, highlightthickness=0),
+                  bg="log_bg", fg="ink", insertbackground="ink")
     txt.pack(fill="both", expand=True, padx=1, pady=1)
-    txt.tag_configure("ok", foreground="#1B6E3A")
-    txt.tag_configure("err", foreground="#B3261E")
-    txt.tag_configure("hint", foreground="#8A5A00")
 
-    ttk.Label(foot, text="\u00a9 %s %s, MIT-Lizenz" % (APP_YEAR, APP_AUTHOR), style="Foot.TLabel").pack(side="left")
+    def log_farben():
+        txt.tag_configure("ok", foreground=THEME["ok"])
+        txt.tag_configure("err", foreground=THEME["fehler"])
+        txt.tag_configure("hint", foreground=THEME["hinweis"])
 
-    def open_web():
-        import webbrowser
-        webbrowser.open(APP_URL)
+    log_farben()
 
-    ttk.Button(foot, text=APP_URL.split("//")[-1], style="Link.TButton", command=open_web,
-               takefocus=False, cursor="hand2").pack(side="left", padx=(8, 0))
-    ttk.Button(foot, text="Info", style="Link.TButton", command=about, takefocus=False).pack(side="right")
+    ttk.Label(foot, text="ezd2lbrn  Fassung %s" % VERSION, style="Foot.TLabel").pack(side="left")
+    ttk.Button(foot, text="Info", style="Link.TButton", command=info, takefocus=False).pack(side="right")
     ttk.Button(foot, text="Lizenzen", style="Link.TButton", command=lambda: show_licenses(win),
-               takefocus=False).pack(side="right")
-    ttk.Label(foot, text="Version %s" % VERSION, style="Foot.TLabel").pack(side="right", padx=8)
+               takefocus=False).pack(side="right", padx=(0, 10))
 
     refresh_fonts()
     upd()
     try:
         import fontTools  # noqa: F401
     except ImportError:
-        log("Hinweis: fontTools nicht installiert - Schriftmetriken werden geschaetzt.\n"
+        log("Hinweis: fontTools nicht installiert - Schriftmetriken werden geschätzt.\n"
             "         Installieren mit:  python -m pip install fonttools pillow")
 
     def on_close():
@@ -2980,10 +3238,143 @@ def run_gui():
     win.mainloop()
 
 
+def _test_objekte():
+    """Baut einen kleinen EZCAD-Entwurf im Speicher: ein Rechteck und ein Text.
+
+    Die Objekte werden ohne den Binärleser erzeugt, weil der Selbsttest ohne
+    EZD-Datei auskommen muss. Alles danach - Geometrie, Schriftmetrik,
+    Layerzuordnung und die Ausgabe als .lbrn2 - läuft wie bei einer echten
+    Umwandlung.
+    """
+    stift = Pen.__new__(Pen)
+    stift.__dict__.update(index=0, color=0, name="Selbsttest", passes=1, speed=1000.0, power=40.0,
+                          frequency=30000, pulse_width=200, start_tc=100, end_tc=100, polygon_tc=50,
+                          jump_speed=3000.0, wobble=0)
+
+    kopf = dict(pen=0, type=0, state=0, hidden=False, label="", array_x=1, array_y=1,
+                position=(0.0, 0.0), children=[])
+
+    rechteck = Rect.__new__(Rect)
+    rechteck.__dict__.update(kopf)
+    rechteck.__dict__.update(p0=(-20.0, -10.0), p1=(20.0, 10.0), round=[0, 0, 0, 0], matrix=None)
+
+    text = Text.__new__(Text)
+    text.__dict__.update(kopf)
+    text.__dict__.update(height=5.0, width=3.0, line_gap=1.0, ref=(-15.0, -3.0), align=0,
+                         matrix=None, text="ezd2lbrn", font="Arial", bold=False, variable=False)
+
+    ezd = EzdFile.__new__(EzdFile)
+    ezd.__dict__.update(path="selbsttest.ezd", warnings=[], pens=[stift], fonts=["Arial"],
+                        objects=[rechteck, text])
+    return ezd
+
+
+def selbsttest():
+    """Prüft die gebaute Programmdatei: Oberfläche, Umwandlung, Lizenztexte.
+
+    Rückgabe 0 = bestanden, sonst 1. Im Bau-Workflow läuft der Selbsttest gegen
+    die fertige .exe: ein blosser --icon-export endet, bevor Tkinter überhaupt
+    anläuft, und würde ein fehlendes Oberflächenpaket nicht bemerken.
+    """
+    fehler = []
+
+    def pruefe(name, bedingung, hinweis=""):
+        ausgeben("%-34s %s%s\n" % (name, "ok" if bedingung else "FEHLER", ("  " + hinweis) if hinweis else ""))
+        if not bedingung:
+            fehler.append(name)
+
+    # 1. Umwandlung bis zur fertigen LightBurn-Datei
+    xml = ""
+    try:
+        ezd = _test_objekte()
+        conv = Converter(field_size=110.0)
+        conv.ezd = ezd
+        conv.s = 1.0
+        conv.tx = conv.ty = conv.off
+        conv.size_mode = None
+        conv._reset()
+        conv._walk(ezd.objects, conv.shapes)
+        conv._assign_layer_indices()
+        xml = conv._build_xml("selbsttest.ezd")
+    except Exception as ex:
+        ausgeben("Umwandlung fehlgeschlagen: %s\n" % ex, fehler=True)
+    pruefe("Umwandlung lieferte XML", bool(xml))
+    pruefe("Text blieb ein Textobjekt", 'Type="Text"' in xml)
+    pruefe("Pfad wurde geschrieben", "<VertList" in xml or 'Type="Path"' in xml)
+    pruefe("Laserparameter als CutSetting", "<CutSetting" in xml)
+    try:
+        ET.fromstring(xml)
+        wohlgeformt = True
+    except Exception as ex:
+        wohlgeformt = False
+        ausgeben("XML nicht lesbar: %s\n" % ex, fehler=True)
+    pruefe("Ausgabe ist gültiges XML", wohlgeformt)
+
+    # 2. Lizenztexte
+    texte = ""
+    try:
+        texte = licenses_text()
+    except Exception as ex:
+        ausgeben("Lizenztexte nicht lesbar: %s\n" % ex, fehler=True)
+    pruefe("Lizenztexte eingebettet", len(texte) > 50000, "%d Zeichen" % len(texte))
+    pruefe("MIT-Lizenz enthalten", "MIT License" in texte)
+    pruefe("Markenabschnitt enthalten", "MARKEN" in texte)
+    abschnitte = lizenz_abschnitte(texte) if texte else []
+    pruefe("Abschnitte auffindbar", len(abschnitte) >= 5, "%d gefunden" % len(abschnitte))
+
+    # 3. Programmsymbol
+    try:
+        import base64
+        symbol = base64.b64decode("".join(ICON_PNG_B64))
+    except Exception:
+        symbol = b""
+    pruefe("Programmsymbol lesbar", symbol[:8] == b"\x89PNG\r\n\x1a\n")
+
+    # 4. Oberfläche: beide Designs, Info- und Lizenzfenster wirklich aufbauen
+    try:
+        import tkinter as tk
+        from tkinter import ttk
+
+        wurzel = tk.Tk()
+        wurzel.withdraw()
+        for design in ("hell", "dunkel"):
+            design_setzen(design)
+            apply_theme(wurzel, ttk)
+            wurzel.update_idletasks()
+        design_setzen("hell")
+        apply_theme(wurzel, ttk)
+
+        leinwand = tk.Canvas(wurzel, height=84, width=600)
+        draw_nameplate(leinwand, load_logo(tk, wurzel, 44), "ezd2lbrn", "Selbsttest")
+        gezeichnet = len(leinwand.find_all()) > 10
+
+        f1 = info_zeigen(wurzel)
+        f2 = show_licenses(wurzel)
+        wurzel.update_idletasks()
+        fenster_ok = bool(f1.winfo_children())
+        f1.destroy()
+        if f2 is not None:
+            f2.destroy()
+        wurzel.destroy()
+    except Exception as ex:
+        gezeichnet = fenster_ok = False
+        ausgeben("Oberfläche fehlgeschlagen: %s\n" % ex, fehler=True)
+    pruefe("Typenschild gezeichnet", gezeichnet)
+    pruefe("Info- und Lizenzfenster", fenster_ok)
+
+    if fehler:
+        ausgeben("\nSelbsttest FEHLGESCHLAGEN: %s\n" % ", ".join(fehler), fehler=True)
+        return 1
+    ausgeben("\nSelbsttest bestanden (ezd2lbrn %s).\n" % VERSION)
+    return 0
+
+
 if __name__ == "__main__":  # (c) Christopher Schmick, iot-simply.com
     if len(sys.argv) == 2 and sys.argv[1] in ("--lizenzen", "--licenses"):
-        sys.stdout.write(licenses_text())
+        ausgeben(licenses_text())
         sys.exit(0)
+    if len(sys.argv) == 2 and sys.argv[1] == "--selbsttest":
+        sys.exit(selbsttest())
     if len(sys.argv) == 3 and sys.argv[1] == "--icon-export":
         import base64
         with open(sys.argv[2], "wb") as fh:

@@ -11,7 +11,7 @@ Entstanden beim Umstieg von einem Faserlaser mit EZCAD2 (Laserquelle
 LG-20-J-01) auf eine Haas HL 50E mit LightBurn. Typischer Anwendungsfall sind
 Typenschilder (Eloxal, Fill-Gravur).
 
-- Version: **1.7.1**
+- Version: **1.8**
 - Lizenz: **MIT** – Copyright (c) 2026 Christopher Schmick, [iot-simply.com](https://iot-simply.com)
 - Keine Internetverbindung nötig, es werden keine Daten übertragen.
 
@@ -93,6 +93,17 @@ fertig gebaute `ezd2lbrn.exe`. Sie wird von GitHub Actions auf einem
 Windows-Runner aus genau dem Quelltext dieses Repositorys gebaut, der zum
 jeweiligen Release gehört. Sie läuft ohne installiertes Python.
 
+Der Release-Text nennt Größe und **SHA-256** der Datei. Nach dem Herunterladen
+prüfen (PowerShell im Download-Ordner):
+
+```powershell
+Get-FileHash .\ezd2lbrn.exe -Algorithm SHA256
+```
+
+Stimmt der Wert nicht überein, war der Download unvollständig. Meldet Windows
+beim Start `Could not load PyInstaller's embedded PKG archive`, ist genau das
+passiert: Datei löschen und neu herunterladen.
+
 ### Variante C: eigenständige `.exe` selbst bauen
 
 **`build_exe.bat`** einmal ausführen. Es installiert `fonttools`, `pillow` und
@@ -129,6 +140,12 @@ Start ohne Argumente (`python ezd2lbrn.py`, `start_ezd2lbrn.bat` oder
 6. **Schriften ersetzen** (optional) – siehe [Schriften ersetzen](#schriften-ersetzen).
 7. **„Vorschau …“** (optional) – siehe [Vorschau](#vorschau).
 8. **„Konvertieren“**.
+
+Unten rechts führt **„Lizenzen“** zu allen Lizenztexten – dort lassen sie sich
+über einen Abschnittswähler durchblättern und als Datei speichern. **„Info“**
+zeigt Fassung, Zweck, Gefahrenhinweis, Copyright und Marken und enthält den
+Schalter für das **dunkle Design**; die Wahl wird mit den übrigen Einstellungen
+gespeichert.
 
 Alle Eingaben (Ordner, Vorlage, Feldgröße, Optionen, Schriftzuordnungen) werden
 gespeichert und beim nächsten Start wieder geladen:
@@ -170,6 +187,7 @@ Zusätzliche Spezialaufrufe:
 | Aufruf | Bedeutung |
 |---|---|
 | `python ezd2lbrn.py --lizenzen` | Gibt alle eingebetteten Lizenztexte aus (auch `--licenses`). |
+| `python ezd2lbrn.py --selbsttest` | Prüft das Programm selbst: baut die Fenster auf, wandelt einen kleinen Entwurf um und prüft die Lizenztexte. Rückgabewert 0 = bestanden. Der Bau-Workflow führt ihn gegen die fertige `.exe` aus. |
 | `python ezd2lbrn.py --icon-export datei.png` | Schreibt das eingebettete Programmsymbol als PNG (wird von `build_exe.bat` genutzt). |
 
 ### Beispiele
@@ -328,17 +346,40 @@ Maßgeblich ist immer, was LightBurn selbst anzeigt – siehe
 
 ## Marken
 
-**EZCAD** ist eine Marke von Beijing JCZ Technology Co., Ltd.
-**LightBurn** ist eine Marke von LightBurn Software, LLC.
-Weitere genannte Namen und Marken gehören ihren jeweiligen Inhabern.
+ezd2lbrn ist ein **unabhängiges** Programm. Es besteht keine Verbindung zu den
+Herstellern der genannten Programme, Steuerungen und Geräte; ezd2lbrn wird von
+ihnen weder herausgegeben noch unterstützt, geprüft oder freigegeben.
 
-ezd2lbrn ist ein **unabhängiges** Projekt. Es steht in keiner Verbindung zu
-diesen Unternehmen und wird von ihnen weder unterstützt noch gebilligt. Die
-Namen werden ausschließlich genannt, um zu beschreiben, mit welchen
-Dateiformaten das Programm arbeitet.
+Die Namen werden ausschließlich genannt, um zu beschreiben, mit welchen
+Dateien, Schriften und Geräten das Programm umgehen kann:
+
+| Name | Inhaber |
+|---|---|
+| EZCAD, JCZ | Beijing JCZ Technology Co., Ltd. |
+| LightBurn | LightBurn Software, LLC |
+| Haas | Haas Automation, Inc. |
+| AutoCAD, DXF | Autodesk, Inc. |
+| Windows, Microsoft, Segoe UI | Microsoft Corporation |
+| Arial | Monotype Imaging Inc. |
+| Python | Python Software Foundation |
+| Tcl, Tk | Tcl Core Team |
+
+Weitere genannte Namen können Marken ihrer jeweiligen Inhaber sein, auch wenn
+sie hier nicht eigens aufgeführt sind. Aus dem Fehlen eines Hinweises lässt
+sich nicht schließen, dass ein Name frei verwendbar wäre.
+
+Es werden **keine** Programmteile, Bibliotheken, Schriften oder Dateien dieser
+Hersteller mitgeliefert.
 
 Das Lesen des EZD-Formats dient der Herstellung von Interoperabilität zwischen
 eigenständigen Programmen (§ 69e UrhG, Art. 6 der EU-Richtlinie 2009/24/EG).
+
+### Ihre Dateien
+
+An Ihren EZD-Projekten, den daraus entstehenden LightBurn-Dateien und Ihren
+Vorlagen erwirbt niemand Rechte – sie bleiben vollständig Ihr Eigentum. Das
+Programm arbeitet ausschließlich auf Ihrem Rechner, überträgt nichts ins
+Internet und sendet keine Nutzungsdaten.
 
 ---
 

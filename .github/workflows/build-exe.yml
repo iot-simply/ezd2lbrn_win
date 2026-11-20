@@ -1,17 +1,17 @@
 name: ezd2lbrn.exe bauen
 
-# Baut die eigenstaendige Windows-Programmdatei auf einem Windows-Runner.
+# Baut die eigenständige Windows-Programmdatei auf einem Windows-Runner.
 # - Manuell startbar (Actions -> "ezd2lbrn.exe bauen" -> "Run workflow").
-#   Wird dabei ein Release-Tag angegeben, wird die exe an dieses Release gehaengt.
-# - Laeuft automatisch bei einem Tag wie v1.7 oder 1.7 und haengt die exe an das Release.
+#   Wird dabei ein Release-Tag angegeben, wird die exe an dieses Release gehängt.
+# - Läuft automatisch bei einem Tag wie v1.8 oder 1.8.
 #
-# Der Release-Text wird aus CHANGELOG.md erzeugt: der Abschnitt "## <Version>"
+# Der Release-Text wird aus CHANGELOG.md erzeugt: der Abschnitt "## <Fassung>"
 # ist die Quelle, damit Changelog und Release nicht auseinanderlaufen.
 on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Release-Tag fuer die exe (z. B. 1.7). Leer lassen = nur Artefakt."
+        description: "Release-Tag für die exe (z. B. 1.8). Leer lassen = nur Artefakt."
         required: false
         default: ""
   push:
@@ -25,6 +25,8 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    # Notbremse: Hängt ein Schritt, bricht der Bau ab, statt stundenlang zu warten.
+    timeout-minutes: 25
 
     steps:
       - name: Quelltext holen
@@ -35,43 +37,60 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Abhaengigkeiten installieren
+      - name: Abhängigkeiten installieren
+        timeout-minutes: 8
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements-build.txt
 
+      - name: Selbsttest im Quelltext
+        timeout-minutes: 4
+        run: python ezd2lbrn.py --selbsttest
+
       - name: Programmsymbol exportieren
+        timeout-minutes: 2
         run: python ezd2lbrn.py --icon-export ezd2lbrn_icon.png
 
       - name: Mit PyInstaller bauen
+        timeout-minutes: 12
         run: >
           python -m PyInstaller --onefile --noconsole --name ezd2lbrn
           --icon ezd2lbrn_icon.png
           --collect-submodules fontTools
           --hidden-import PIL.ImageDraw --hidden-import PIL.ImageTk
+          --hidden-import webbrowser
           ezd2lbrn.py
 
       # Das Programm ist ein GUI-Programm (--noconsole). PowerShell wartet darauf
       # nicht von selbst, deshalb Start-Process mit -Wait.
-      - name: Kurztest (Start, Symbol und Lizenztexte)
+      # Der Selbsttest baut wirklich Fenster auf und wandelt um - ein blosses
+      # --icon-export endet, bevor Tkinter überhaupt anläuft.
+      - name: Selbsttest der gebauten exe
+        timeout-minutes: 4
         run: |
           $exe = Resolve-Path "dist\ezd2lbrn.exe"
+          $p = Start-Process -FilePath $exe -ArgumentList "--selbsttest" `
+                             -WorkingDirectory $PWD -RedirectStandardOutput selbsttest.txt -PassThru -Wait
+          Get-Content selbsttest.txt
+          if ($p.ExitCode -ne 0) { throw "Selbsttest endete mit Code $($p.ExitCode)" }
           $p = Start-Process -FilePath $exe -ArgumentList "--icon-export","test_icon.png" `
                              -WorkingDirectory $PWD -PassThru -Wait
           if ($p.ExitCode -ne 0) { throw "ezd2lbrn.exe endete mit Code $($p.ExitCode)" }
           if (-not (Test-Path test_icon.png)) { throw "Programm hat kein Symbol geschrieben" }
-          # Die Lizenztexte der Fremdkomponenten muessen aus der .exe heraus erreichbar
-          # sein, sonst darf die Datei nicht weitergegeben werden.
+          # Die Lizenztexte müssen aus der .exe heraus erreichbar sein, sonst darf
+          # die Datei nicht allein weitergegeben werden.
           $q = Start-Process -FilePath $exe -ArgumentList "--lizenzen" -WorkingDirectory $PWD `
                              -RedirectStandardOutput lizenzen.txt -PassThru -Wait
           if ($q.ExitCode -ne 0) { throw "--lizenzen endete mit Code $($q.ExitCode)" }
           $groesse = (Get-Item lizenzen.txt).Length
-          if ($groesse -lt 50000) { throw "Lizenztext unvollstaendig: nur $groesse Bytes" }
-          if (-not (Select-String -Path lizenzen.txt -Pattern "MIT License" -Quiet)) {
-            throw "Lizenztext enthaelt keine MIT-Lizenz"
+          if ($groesse -lt 50000) { throw "Lizenztext unvollständig: nur $groesse Bytes" }
+          foreach ($teil in @("MIT License", "MARKEN", "IHRE DATEIEN")) {
+            if (-not (Select-String -Path lizenzen.txt -Pattern $teil -Quiet)) {
+              throw "Lizenztext ohne Abschnitt: $teil"
+            }
           }
-          Write-Host "ezd2lbrn.exe laeuft. Symbol geschrieben, Lizenztext $groesse Bytes."
-          Remove-Item test_icon.png, lizenzen.txt
+          Write-Host "ezd2lbrn.exe läuft, Selbsttest bestanden, Lizenztext $groesse Bytes."
+          Remove-Item test_icon.png, lizenzen.txt, selbsttest.txt
 
       - name: Ergebnis als Artefakt hochladen
         uses: actions/upload-artifact@v6
@@ -80,8 +99,9 @@ jobs:
           path: dist/ezd2lbrn.exe
           if-no-files-found: error
 
-      - name: An Release anhaengen
+      - name: An Release anhängen
         if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.release_tag != ''
+        timeout-minutes: 6
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.event.inputs.release_tag }}
@@ -90,7 +110,7 @@ jobs:
           if (-not $tag) { $tag = $env:GITHUB_REF_NAME }
           $version = $tag -replace '^v', ''
 
-          # Passenden Abschnitt aus CHANGELOG.md holen ("## 1.7" bis zur naechsten "## "-Zeile)
+          # Passenden Abschnitt aus CHANGELOG.md holen ("## 1.8" bis zur nächsten "## "-Zeile)
           $abschnitt = @()
           $drin = $false
           foreach ($zeile in (Get-Content CHANGELOG.md -Encoding UTF8)) {
@@ -103,38 +123,52 @@ jobs:
           }
           $text = ($abschnitt -join "`n").Trim()
 
+          $pruefsumme = (Get-FileHash "dist\ezd2lbrn.exe" -Algorithm SHA256).Hash.ToLower()
+          $bytes = (Get-Item "dist\ezd2lbrn.exe").Length
+
           $notizen = @()
           if ($text) {
-            $notizen += "## Aenderungen in $version"
+            $notizen += "## Änderungen in $version"
             $notizen += ""
             $notizen += $text
             $notizen += ""
           }
           $notizen += "## Download"
           $notizen += ""
-          $notizen += "``ezd2lbrn.exe`` laeuft eigenstaendig, ohne installiertes Python."
+          $notizen += "``ezd2lbrn.exe`` läuft eigenständig, ohne installiertes Python."
           $notizen += "Gebaut mit PyInstaller aus ``$($env:GITHUB_SHA.Substring(0,7))`` auf einem Windows-Runner."
           $notizen += ""
-          $notizen += "Die Datei ist nicht signiert. Windows meldet deshalb beim ersten Start SmartScreen:"
-          $notizen += "ueber ``Weitere Informationen`` und ``Trotzdem ausfuehren`` bestaetigen."
+          $notizen += "Größe: $($bytes.ToString('N0')) Bytes"
           $notizen += ""
-          $notizen += "Vollstaendige Anleitung: siehe README."
+          $notizen += "SHA-256: ``$pruefsumme``"
+          $notizen += ""
+          $notizen += "Nach dem Herunterladen prüfen (PowerShell im Download-Ordner):"
+          $notizen += ""
+          $notizen += "``````"
+          $notizen += "Get-FileHash .\ezd2lbrn.exe -Algorithm SHA256"
+          $notizen += "``````"
+          $notizen += ""
+          $notizen += "Stimmt der Wert nicht überein, war der Download unvollständig."
+          $notizen += "Meldet Windows beim Start ``Could not load PyInstaller's embedded PKG archive``,"
+          $notizen += "ist genau das passiert: Datei löschen und neu herunterladen."
+          $notizen += ""
+          $notizen += "Die Datei ist nicht signiert. Windows meldet deshalb beim ersten Start SmartScreen:"
+          $notizen += "über ``Weitere Informationen`` und ``Trotzdem ausführen`` bestätigen."
           $notizen += ""
           $notizen += "## Sicherheit"
           $notizen += ""
-          $notizen += "Das Programm steuert keinen Laser, die erzeugte Datei enthaelt aber Laserparameter."
-          $notizen += "Geometrie, Groesse, Position und alle Parameter in LightBurn pruefen und an"
-          $notizen += "Testmaterial erproben, bevor ein Werkstueck bearbeitet wird."
+          $notizen += "Das Programm steuert keinen Laser, die erzeugte Datei enthält aber Laserparameter."
+          $notizen += "Geometrie, Größe, Position, Fokus und alle Parameter in LightBurn prüfen und an"
+          $notizen += "Testmaterial erproben, bevor ein Werkstück bearbeitet wird."
           $notizen += ""
           $notizen += "## Lizenz und Marken"
           $notizen += ""
-          $notizen += "MIT-Lizenz, Copyright (c) 2026 Christopher Schmick, iot-simply.com. Ohne Gewaehrleistung."
-          $notizen += "Alle Lizenztexte stecken im Programm: Schaltflaeche ``Lizenzen`` unten rechts."
-          $notizen += "Auf der Kommandozeile: ``ezd2lbrn.exe --lizenzen > lizenzen.txt`` (das Programm hat"
-          $notizen += "bewusst kein Konsolenfenster, die Texte muessen deshalb in eine Datei geschrieben werden)."
+          $notizen += "MIT-Lizenz, Copyright (c) 2026 Christopher Schmick, iot-simply.com. Ohne Gewährleistung."
+          $notizen += "Alle Lizenztexte stecken im Programm: Schaltfläche ``Lizenzen`` unten rechts, dort auch"
+          $notizen += "als Datei speicherbar."
           $notizen += ""
           $notizen += "EZCAD ist eine Marke von Beijing JCZ Technology Co., Ltd., LightBurn eine Marke von"
-          $notizen += "LightBurn Software, LLC. ezd2lbrn ist unabhaengig und steht in keiner Verbindung zu"
+          $notizen += "LightBurn Software, LLC. ezd2lbrn ist unabhängig und steht in keiner Verbindung zu"
           $notizen += "diesen Unternehmen."
           Set-Content -Path release-notes.md -Value ($notizen -join "`n") -Encoding UTF8
 
@@ -148,4 +182,4 @@ jobs:
           }
           gh release upload $tag dist/ezd2lbrn.exe --clobber
           Remove-Item release-notes.md
-          Write-Host "exe an Release $tag gehaengt."
+          Write-Host "exe an Release $tag gehängt."

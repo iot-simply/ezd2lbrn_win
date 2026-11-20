@@ -3,6 +3,27 @@
 Alle nennenswerten Änderungen an ezd2lbrn. Versionsnummern entsprechen der
 Konstanten `VERSION` in `ezd2lbrn.py`.
 
+## 1.8
+
+- **Info-Fenster** neu: Typenschild als Kopf, Fassung, Zweck, Gefahrenhinweis,
+  Copyright, anklickbare Webseite, Marken und Ablageort der Einstellungen.
+- **Dunkles Design** neben dem hellen, umschaltbar im Info-Fenster; die Wahl
+  wird gespeichert.
+- Das Typenschild ist aus dem Hauptfenster verschwunden, der Arbeitsbereich
+  gewinnt dadurch rund 90 Pixel. In der Fußzeile stehen nur noch Name, Fassung,
+  Lizenzen und Info, darüber ein dauerhafter Gefahrenhinweis in Rot.
+- **Lizenzfenster**: Abschnittswähler zum Springen und „Als Datei speichern“.
+- Eingebettete Lizenztexte um die Abschnitte **MARKEN** und **IHRE DATEIEN**
+  ergänzt.
+- **`--selbsttest`** eingebaut: baut die Fenster auf, wandelt einen kleinen
+  Entwurf bis zur fertigen `.lbrn2` um und prüft die Lizenztexte. Der
+  Bau-Workflow führt ihn gegen die fertige `.exe` aus.
+- Oberfläche, Meldungen und Dokumentation durchgehend mit echten Umlauten.
+- Alle Konsolenausgaben laufen über eine Funktion, die fehlende Ausgabeströme
+  stillschweigend hinnimmt – in der `--noconsole`-exe gibt es keine.
+- Release-Text nennt jetzt Größe und SHA-256 der Datei; der Workflow hat
+  Zeitgrenzen je Schritt und für den gesamten Auftrag.
+
 ## 1.7.1
 
 - Markenzuordnung ergänzt: EZCAD ist eine Marke von Beijing JCZ Technology,
