@@ -11,7 +11,7 @@ Entstanden beim Umstieg von einem Faserlaser mit EZCAD2 (Laserquelle
 LG-20-J-01) auf eine Haas HL 50E mit LightBurn. Typischer Anwendungsfall sind
 Typenschilder (Eloxal, Fill-Gravur).
 
-- Version: **1.8**
+- Version: **1.8.1**
 - Lizenz: **MIT** – Copyright (c) 2026 Christopher Schmick, [iot-simply.com](https://iot-simply.com)
 - Keine Internetverbindung nötig, es werden keine Daten übertragen.
 
@@ -143,7 +143,7 @@ Start ohne Argumente (`python ezd2lbrn.py`, `start_ezd2lbrn.bat` oder
 
 Unten rechts führt **„Lizenzen“** zu allen Lizenztexten – dort lassen sie sich
 über einen Abschnittswähler durchblättern und als Datei speichern. **„Info“**
-zeigt Fassung, Zweck, Gefahrenhinweis, Copyright und Marken und enthält den
+zeigt Version, Zweck, Gefahrenhinweis, Copyright und Marken und enthält den
 Schalter für das **dunkle Design**; die Wahl wird mit den übrigen Einstellungen
 gespeichert.
 

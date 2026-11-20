@@ -3,14 +3,22 @@
 Alle nennenswerten Änderungen an ezd2lbrn. Versionsnummern entsprechen der
 Konstanten `VERSION` in `ezd2lbrn.py`.
 
+## 1.8.1
+
+- Die Fenster-Titelleiste folgt unter Windows jetzt dem dunklen Design
+  (DwmSetWindowAttribute ab Windows 10 1809). Tk zeichnet diese Leiste nicht
+  selbst, deshalb blieb sie bisher hell.
+- Fußzeile zeigt nur noch Name und Version ohne Beschriftung, das Info-Fenster
+  sagt „Version" statt „Fassung".
+
 ## 1.8
 
-- **Info-Fenster** neu: Typenschild als Kopf, Fassung, Zweck, Gefahrenhinweis,
+- **Info-Fenster** neu: Typenschild als Kopf, Version, Zweck, Gefahrenhinweis,
   Copyright, anklickbare Webseite, Marken und Ablageort der Einstellungen.
 - **Dunkles Design** neben dem hellen, umschaltbar im Info-Fenster; die Wahl
   wird gespeichert.
 - Das Typenschild ist aus dem Hauptfenster verschwunden, der Arbeitsbereich
-  gewinnt dadurch rund 90 Pixel. In der Fußzeile stehen nur noch Name, Fassung,
+  gewinnt dadurch rund 90 Pixel. In der Fußzeile stehen nur noch Name, Version,
   Lizenzen und Info, darüber ein dauerhafter Gefahrenhinweis in Rot.
 - **Lizenzfenster**: Abschnittswähler zum Springen und „Als Datei speichern“.
 - Eingebettete Lizenztexte um die Abschnitte **MARKEN** und **IHRE DATEIEN**

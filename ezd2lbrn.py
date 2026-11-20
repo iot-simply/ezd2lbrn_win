@@ -39,7 +39,7 @@ import xml.etree.ElementTree as ET
 from io import BytesIO
 from xml.sax.saxutils import quoteattr
 
-VERSION = "1.8"
+VERSION = "1.8.1"
 APP_AUTHOR = "Christopher Schmick"
 APP_BRAND = "iot-simply"
 APP_URL = "https://iot-simply.com"
@@ -2106,6 +2106,7 @@ def show_licenses(master):
     ttk.Button(leiste, text="Als Datei speichern", command=speichern).pack(side="right", padx=8)
     t.pack(fill="both", expand=True, padx=12, pady=(8, 0))
     w.bind("<Escape>", lambda e: w.destroy())
+    titelleiste_faerben(w)
     return w
 
 
@@ -2148,7 +2149,7 @@ def info_zeigen(master, v_design=None, design_wechseln=None):
     leib = ttk.Frame(w, padding=(16, 8, 16, 4))
     leib.pack(fill="both", expand=True)
 
-    ttk.Label(leib, text="Fassung %s" % VERSION, style="Section.TLabel").pack(anchor="w")
+    ttk.Label(leib, text="Version %s" % VERSION, style="Section.TLabel").pack(anchor="w")
     ttk.Label(leib, text="Wandelt EZCAD2-Projektdateien (.ezd) in LightBurn-Projekte (.lbrn2) um. Texte bleiben "
                          "bearbeitbare LightBurn-Textobjekte statt Kurven. Läuft vollständig offline, es werden "
                          "keine Daten übertragen.",
@@ -2204,6 +2205,7 @@ def info_zeigen(master, v_design=None, design_wechseln=None):
     ttk.Button(knoepfe, text="Lizenzen", command=lambda: show_licenses(w)).pack(side="right", padx=8)
 
     w.bind("<Escape>", lambda e: w.destroy())
+    titelleiste_faerben(w)
     w.update_idletasks()
     try:
         x = master.winfo_rootx() + (master.winfo_width() - w.winfo_width()) // 2
@@ -2526,6 +2528,40 @@ THEMEN = {
 THEME = dict(THEMEN["hell"])
 
 
+def ist_dunkel():
+    """True, wenn gerade das dunkle Design aktiv ist."""
+    return THEME.get("bg") == THEMEN["dunkel"]["bg"]
+
+
+def titelleiste_faerben(fenster, dunkel=None):
+    """Färbt die Fenster-Titelleiste unter Windows passend zum Design.
+
+    Tk zeichnet die Titelleiste nicht selbst, das macht Windows. Ab Windows 10
+    (1809) lässt sie sich über DwmSetWindowAttribute umstellen: Attribut 20,
+    auf älteren Fassungen 19. Auf anderen Systemen passiert nichts.
+    """
+    if dunkel is None:
+        dunkel = ist_dunkel()
+    if not sys.platform.startswith("win"):
+        return
+    try:
+        import ctypes
+
+        fenster.update_idletasks()
+        kennung = ctypes.windll.user32.GetParent(fenster.winfo_id()) or fenster.winfo_id()
+        wert = ctypes.c_int(1 if dunkel else 0)
+        for attribut in (20, 19):
+            if ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                    kennung, attribut, ctypes.byref(wert), ctypes.sizeof(wert)) == 0:
+                break
+        # Ohne Neuzeichnen wechselt die Farbe erst, wenn das Fenster bewegt wird.
+        if fenster.winfo_viewable():
+            fenster.withdraw()
+            fenster.deiconify()
+    except Exception:
+        pass
+
+
 def design_setzen(name):
     """Schaltet das aktive Design um und liefert den tatsächlich gesetzten Namen."""
     if name not in THEMEN:
@@ -2694,6 +2730,7 @@ class PreviewWindow(object):
         self.win.title("Vorschau")
         self.win.geometry("1000x760")
         self.win.configure(bg=THEME["bg"])
+        titelleiste_faerben(self.win)
         self.v_file = tk.StringVar(value=os.path.basename(self.files[0]))
         self.v_mode = tk.StringVar(value="beide")
         self.v_hatch = tk.BooleanVar(value=False)
@@ -2894,6 +2931,7 @@ def run_gui():
     win.minsize(760, 640)
     v_design = tk.StringVar(value=design_setzen(cfg.get("design", "hell")))
     apply_theme(win, ttk)
+    titelleiste_faerben(win)
     files = []
     v_out = tk.StringVar(value=cfg.get("ziel", ""))
     v_field = tk.StringVar(value=cfg.get("feld", "110"))
@@ -3130,6 +3168,8 @@ def run_gui():
             except Exception:
                 pass
         log_farben()
+        for fenster in [win] + [k for k in win.winfo_children() if isinstance(k, tk.Toplevel)]:
+            titelleiste_faerben(fenster)
         store()
 
     def info():
@@ -3217,7 +3257,7 @@ def run_gui():
 
     log_farben()
 
-    ttk.Label(foot, text="ezd2lbrn  Fassung %s" % VERSION, style="Foot.TLabel").pack(side="left")
+    ttk.Label(foot, text="ezd2lbrn %s" % VERSION, style="Foot.TLabel").pack(side="left")
     ttk.Button(foot, text="Info", style="Link.TButton", command=info, takefocus=False).pack(side="right")
     ttk.Button(foot, text="Lizenzen", style="Link.TButton", command=lambda: show_licenses(win),
                takefocus=False).pack(side="right", padx=(0, 10))
